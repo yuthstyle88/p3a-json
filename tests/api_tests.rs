@@ -12,7 +12,7 @@ async fn test_telemetry_endpoint_success() {
         App::new()
             .wrap(AuthMiddleware::new("test_key".to_string()))
             .app_data(web::Data::new(pool.clone()))
-            .route("/telemetry", web::post().to(insert_event))
+            .route("/", web::post().to(insert_event))
     ).await;
 
     // Test data
@@ -20,7 +20,7 @@ async fn test_telemetry_endpoint_success() {
 
     // Execute
     let req = test::TestRequest::post()
-        .uri("/telemetry")
+        .uri("/")
         .insert_header(("BraveServiceKey", "test_key"))
         .set_json(&test_event)
         .to_request();
@@ -51,14 +51,14 @@ async fn test_telemetry_endpoint_unauthorized() {
         App::new()
             .wrap(AuthMiddleware::new("test_key".to_string()))
             .app_data(web::Data::new(pool.clone()))
-            .route("/telemetry", web::post().to(insert_event))
+            .route("/", web::post().to(insert_event))
     ).await;
 
     let test_event = common::get_test_event();
 
     // Test without auth header
     let req = test::TestRequest::post()
-        .uri("/telemetry")
+        .uri("/")
         .set_json(&test_event)
         .to_request();
 
@@ -67,7 +67,7 @@ async fn test_telemetry_endpoint_unauthorized() {
 
     // Test with wrong auth key
     let req = test::TestRequest::post()
-        .uri("/telemetry")
+        .uri("/")
         .insert_header(("BraveServiceKey", "wrong_key"))
         .set_json(&test_event)
         .to_request();
@@ -83,12 +83,12 @@ async fn test_telemetry_endpoint_validation() {
         App::new()
             .wrap(AuthMiddleware::new("test_key".to_string()))
             .app_data(web::Data::new(pool.clone()))
-            .route("/telemetry", web::post().to(insert_event))
+            .route("/", web::post().to(insert_event))
     ).await;
 
     // Test invalid JSON
     let req = test::TestRequest::post()
-        .uri("/telemetry")
+        .uri("/")
         .insert_header(("BraveServiceKey", "test_key"))
         .set_json(json!({
             "metric_name": "test",
@@ -104,7 +104,7 @@ async fn test_telemetry_endpoint_validation() {
     test_event.metric_value = -1; // assuming negative values are invalid
 
     let req = test::TestRequest::post()
-        .uri("/telemetry")
+        .uri("/")
         .insert_header(("BraveServiceKey", "test_key"))
         .set_json(&test_event)
         .to_request();
