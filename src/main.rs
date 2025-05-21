@@ -16,10 +16,20 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .wrap(telemetry_events::AuthMiddleware::new(brave_service_key.clone()))
             .wrap(Logger::default())
             .app_data(web::Data::new(pool.clone()))
-            .route("/", web::post().to(telemetry_events::insert_event))
+            // GET "/" ไม่ต้อง auth
+            .route("/", web::get().to(|| async {
+                actix_web::HttpResponse::Ok()
+                    .content_type("text/plain; charset=utf-8")
+                    .body("Submission of privacy-preserving product analytics. See https://support.brave.com/hc/en-us/articles/9140465918093-What-is-P3A-in-Brave for details.")
+            }))
+            // POST "/" ต้อง auth
+            .service(
+                web::resource("/")
+                    .wrap(telemetry_events::AuthMiddleware::new(brave_service_key.clone()))
+                    .route(web::post().to(telemetry_events::insert_event))
+            )
     })
         .bind(("0.0.0.0", 8080))?
         .run()

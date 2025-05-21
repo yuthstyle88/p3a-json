@@ -82,3 +82,6 @@ BraveServiceKey: test_key
   "metric_name": "invalid_test",
   "metric_value": 100
 }
+
+### Test invalid JSON
+GET http://localhost:8080
