@@ -1,0 +1,84 @@
+### Test successful telemetry event insert
+POST http://localhost:8080
+Content-Type: application/json
+BraveServiceKey: test_key
+
+{
+  "cadence": "daily",
+  "channel": "stable",
+  "country_code": "US",
+  "metric_name": "test_metric",
+  "metric_value": 100,
+  "platform": "macos",
+  "version": "1.0.0",
+  "woi": 1,
+  "wos": 2,
+  "yoi": 2024,
+  "yos": 2024
+}
+
+### Test unauthorized access
+POST http://localhost:8080
+Content-Type: application/json
+
+{
+  "cadence": "daily",
+  "channel": "stable",
+  "country_code": "US",
+  "metric_name": "test_metric",
+  "metric_value": 100,
+  "platform": "macos",
+  "version": "1.0.0",
+  "woi": 1,
+  "wos": 2,
+  "yoi": 2024,
+  "yos": 2024
+}
+
+### Test with wrong auth key
+POST http://localhost:8080
+Content-Type: application/json
+BraveServiceKey: wrong_key
+
+{
+  "cadence": "daily",
+  "channel": "stable",
+  "country_code": "US",
+  "metric_name": "test_metric",
+  "metric_value": 100,
+  "platform": "macos",
+  "version": "1.0.0",
+  "woi": 1,
+  "wos": 2,
+  "yoi": 2024,
+  "yos": 2024
+}
+
+### Test with different values
+POST http://localhost:8080
+Content-Type: application/json
+BraveServiceKey: test_key
+
+{
+  "cadence": "weekly",
+  "channel": "beta",
+  "country_code": "JP",
+  "metric_name": "second_metric",
+  "metric_value": 200,
+  "platform": "windows",
+  "version": "2.0.0",
+  "woi": 5,
+  "wos": 6,
+  "yoi": 2024,
+  "yos": 2024
+}
+
+### Test invalid JSON
+POST http://localhost:8080
+Content-Type: application/json
+BraveServiceKey: test_key
+
+{
+  "metric_name": "invalid_test",
+  "metric_value": 100
+}
