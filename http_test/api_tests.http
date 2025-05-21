@@ -1,7 +1,7 @@
 ### Test successful telemetry event insert
 POST http://localhost:8080
 Content-Type: application/json
-BraveServiceKey: test_key
+BraveServiceKey: qztbjzBqJueQZLFkwTTJrieu8Vw3789u
 
 {
   "cadence": "daily",
