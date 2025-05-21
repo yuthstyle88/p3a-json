@@ -1,0 +1,177 @@
+## การพัฒนา
+
+อธิบายขั้นตอนสำหรับนักพัฒนาที่ต้องการร่วมพัฒนา:
+
+1. Fork โปรเจค
+2. สร้าง branch ใหม่ (`git checkout -b feature/amazing-feature`)
+3. Commit การเปลี่ยนแปลง (`git commit -m 'Add some feature'`)
+4. Push ไปยัง branch (`git push origin feature/amazing-feature`)
+5. สร้าง Pull Request
+
+## License
+
+ระบุ License ที่ใช้ในโปรเจค
+
+## ผู้พัฒนา
+
+- ชื่อคุณ - [GitHub](https://github.com/yourusername)
+# 🚀 Telemetry Events API
+
+ระบบ API สำหรับรับและจัดเก็บ Telemetry Events ด้วย Rust + Actix-web + SQLx + PostgreSQL
+
+---
+
+## ✨ คุณสมบัติ (Features)
+
+- รองรับการบันทึกข้อมูล telemetry (event จาก app, browser, หรืออุปกรณ์)
+- มี Auth Middleware ตรวจสอบ Header (BraveServiceKey)
+- Rust async performance, ใช้ connection pool
+- ใช้ Database Partition รองรับข้อมูลขนาดใหญ่
+- รองรับ SQLx Migration
+
+---
+
+## 📦 การติดตั้ง (Installation)
+
+### Prerequisites
+
+- Rust (1.73.0+)
+- PostgreSQL (14.0+)
+- SQLx CLI (`cargo install sqlx-cli --no-default-features --features postgres`)
+
+### 1. Clone โปรเจค
+
+```bash
+git clone https://github.com/youruser/telemetry_events.git
+cd telemetry_events
+```
+
+### 2. ติดตั้ง dependencies
+
+```bash
+cargo build
+```
+
+### 3. สร้างและตั้งค่าฐานข้อมูล
+
+```bash
+createdb telemetry_db
+```
+
+สร้างไฟล์ `.env` ที่ root โปรเจค เช่น
+
+```env
+DATABASE_URL=postgres://yongyutjantaboot@localhost:5432/telemetry_db
+BRAVE_SERVICE_KEY=qztbjzBqJueQZLFkwTTJrieu8Vw3789u
+```
+
+---
+
+## 🔄 Database Migration
+
+### สร้าง Migration ใหม่
+
+```bash
+sqlx migrate add create_telemetry_events
+```
+
+### ตัวอย่าง SQL Migration
+
+```sql
+CREATE TABLE telemetry_events (
+    id BIGSERIAL NOT NULL,
+    cadence TEXT NOT NULL,
+    channel TEXT NOT NULL,
+    country_code TEXT NOT NULL,
+    metric_name TEXT NOT NULL,
+    metric_value INTEGER NOT NULL,
+    platform TEXT NOT NULL,
+    version TEXT NOT NULL,
+    woi SMALLINT NOT NULL,
+    wos SMALLINT NOT NULL,
+    yoi SMALLINT NOT NULL,
+    yos SMALLINT NOT NULL,
+    received_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (id, received_at)
+) PARTITION BY RANGE (received_at);
+
+CREATE TABLE telemetry_events_y2025
+PARTITION OF telemetry_events
+FOR VALUES FROM ('2025-01-01') TO ('2026-01-01');
+
+CREATE TABLE telemetry_events_default
+PARTITION OF telemetry_events DEFAULT;
+```
+
+### รัน Migration
+
+```bash
+sqlx migrate run
+```
+
+---
+
+## ⚡ วิธีใช้งาน API
+
+### Endpoint
+
+`POST /`
+
+**Body ตัวอย่าง:**
+
+```json
+{
+  "cadence": "typical",
+  "channel": "release",
+  "country_code": "th",
+  "metric_name": "Brave.Today.WeeklySessionCount",
+  "metric_value": 1,
+  "platform": "ios",
+  "version": "1.0",
+  "woi": 21,
+  "wos": 21,
+  "yoi": 2025,
+  "yos": 2025
+}
+```
+
+**ต้องส่ง Header:**
+```
+BraveServiceKey: qztbjzBqJueQZLFkwTTJrieu8Vw3789u
+```
+
+---
+
+## 🛠️ การพัฒนา (Development)
+
+- เพิ่ม dependencies ที่ต้องใช้ใน `Cargo.toml`
+- รองรับ .env ด้วย dotenvy
+- Middleware สำหรับ Auth ตรวจสอบ key
+
+---
+
+## 📁 โครงสร้างโปรเจค (Project Structure)
+
+```
+telemetry_events/
+├── src/
+│   └── main.rs
+├── migrations/
+│   ├── YYYYMMDD_create_telemetry_events.up.sql
+│   └── YYYYMMDD_create_telemetry_events.down.sql
+├── .env
+├── Cargo.toml
+└── README.md
+```
+
+---
+
+## License
+
+MIT
+
+## Contributors
+
+- Yongyut Jantaboot (Yut) - [GitHub](https://github.com/yourusername)
+
+---
