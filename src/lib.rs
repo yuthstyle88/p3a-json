@@ -1,12 +1,11 @@
-use actix_web::{web, App, HttpServer, HttpRequest, HttpResponse, Result, middleware::Logger};
+use actix_web::{web, HttpResponse, Result};
 use actix_web::dev::{ServiceRequest, ServiceResponse, Transform, forward_ready};
 use actix_web::Error;
 use futures_util::future::{ok, LocalBoxFuture, Ready};
-use sqlx::{PgPool, postgres::PgPoolOptions};
-use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 
 use std::rc::Rc;
-use actix_web::body::{MessageBody, BoxBody};
+use actix_web::body::{BoxBody};
 
 
 // Export public items
