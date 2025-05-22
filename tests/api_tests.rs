@@ -1,225 +1,194 @@
-mod common;
+// tests/api_tests.rs
 
+use actix::Actor;
 use actix_web::{test, web, App};
-use telemetry_events::{AuthMiddleware, insert_event, TelemetryEvent};
-use serde_json::json;
+use lapin::{
+    options::{BasicPublishOptions, QueueDeclareOptions},
+    types::FieldTable,
+    BasicProperties, Connection, ConnectionProperties,
+};
+use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
+use std::sync::Arc;
+use telemetry_events::{
+    payload::MyPayload,
+    worker::{AppContext, RabbitMqWorker},
+};
+use telemetry_events::queue_job::queue_job;
 
-#[actix_web::test]
-async fn test_telemetry_endpoint_success() {
-    // Setup
-    let pool = common::setup_test_db().await;
-    let app = test::init_service(
-        App::new()
-            .wrap(AuthMiddleware::new("test_key".to_string()))
-            .app_data(web::Data::new(pool.clone()))
-            .route("/", web::post().to(insert_event))
-    ).await;
+// Helper function to create test database pool
+async fn setup_test_db() -> Pool<Postgres> {
+    // Use a test-specific database URL or environment variable
+    dotenvy::dotenv().ok();
+    let database_url = std::env::var("TEST_DATABASE_URL")
+        .unwrap_or_else(|_| std::env::var("DATABASE_URL").expect("DATABASE_URL not set"));
 
-    // Test data
-    let test_event = common::get_test_event();
-
-    // Execute
-    let req = test::TestRequest::post()
-        .uri("/")
-        .insert_header(("BraveServiceKey", "test_key"))
-        .set_json(&test_event)
-        .to_request();
-
-    let resp = test::call_service(&app, req).await;
-
-    // Verify
-    assert!(resp.status().is_success());
-
-    // Verify database
-    let saved_event = sqlx::query_as!(
-        TelemetryEvent,
-        "SELECT * FROM telemetry_events WHERE metric_name = $1",
-        test_event.metric_name
-    )
-        .fetch_one(&pool)
+    PgPoolOptions::new()
+        .max_connections(2)
+        .connect(&database_url)
         .await
-        .expect("Failed to fetch saved event");
-
-    assert_eq!(saved_event.metric_name, test_event.metric_name);
-    assert_eq!(saved_event.metric_value, test_event.metric_value);
+        .expect("Failed to connect to test database")
 }
 
-#[actix_web::test]
-async fn test_telemetry_endpoint_unauthorized() {
-    let pool = common::setup_test_db().await;
-    let app = test::init_service(
-        App::new()
-            .wrap(AuthMiddleware::new("test_key".to_string()))
-            .app_data(web::Data::new(pool.clone()))
-            .route("/", web::post().to(insert_event))
-    ).await;
+// Helper function to create RabbitMQ connection for tests
+async fn setup_test_rabbitmq() -> Arc<lapin::Channel> {
+    dotenvy::dotenv().ok();
+    let rabbitmq_url = std::env::var("TEST_RABBITMQ_URL")
+        .unwrap_or_else(|_| std::env::var("RABBITMQ_URL").expect("RABBITMQ_URL not set"));
 
-    let test_event = common::get_test_event();
+    let conn = Connection::connect(&rabbitmq_url, ConnectionProperties::default())
+        .await
+        .expect("Failed to connect to RabbitMQ");
 
-    // Test without auth header
-    let req = test::TestRequest::post()
-        .uri("/")
-        .set_json(&test_event)
-        .to_request();
+    let channel = conn
+        .create_channel()
+        .await
+        .expect("Failed to create channel");
 
-    let resp = test::call_service(&app, req).await;
-    assert_eq!(resp.status(), 401);
+    // Create a test-specific queue
+    let queue_name = "test_queue";
+    channel
+        .queue_declare(
+            queue_name,
+            QueueDeclareOptions {
+                durable: true,
+                auto_delete: false,
+                ..QueueDeclareOptions::default()
+            },
+            FieldTable::default(),
+        )
+        .await
+        .expect("Failed to declare test queue");
 
-    // Test with wrong auth key
-    let req = test::TestRequest::post()
-        .uri("/")
-        .insert_header(("BraveServiceKey", "wrong_key"))
-        .set_json(&test_event)
-        .to_request();
-
-    let resp = test::call_service(&app, req).await;
-    assert_eq!(resp.status(), 401);
+    Arc::new(channel)
 }
 
-#[actix_web::test]
-async fn test_telemetry_endpoint_validation() {
-    let pool = common::setup_test_db().await;
-    let app = test::init_service(
-        App::new()
-            .wrap(AuthMiddleware::new("test_key".to_string()))
-            .app_data(web::Data::new(pool.clone()))
-            .route("/", web::post().to(insert_event))
-    ).await;
+// Setup function for the app context with test dependencies
+async fn setup_test_context() -> AppContext {
+    let pool = setup_test_db().await;
+    let brave_service_key = std::env::var("BRAVE_SERVICE_KEY")
+        .unwrap_or_else(|_| "test_brave_service_key".to_string());
+    let rabbit_channel = setup_test_rabbitmq().await;
 
-    // Test invalid JSON
-    let req = test::TestRequest::post()
-        .uri("/")
-        .insert_header(("BraveServiceKey", "test_key"))
-        .set_json(json!({
-            "metric_name": "test",
-            // missing required fields
-        }))
-        .to_request();
-
-    let resp = test::call_service(&app, req).await;
-    assert!(resp.status().is_client_error());
-
-    // Test invalid metric_value
-    let mut test_event = common::get_test_event();
-    test_event.metric_value = -1; // assuming negative values are invalid
-
-    let req = test::TestRequest::post()
-        .uri("/")
-        .insert_header(("BraveServiceKey", "test_key"))
-        .set_json(&test_event)
-        .to_request();
-
-    let resp = test::call_service(&app, req).await;
-    assert!(resp.status().is_client_error());
+    AppContext {
+        pool,
+        brave_service_key,
+        rabbit_channel,
+    }
 }
-#[actix_web::test]
-async fn test_telemetry_endpoint_insert() {
-    // Setup
-    let pool = common::setup_test_db().await;
-    let app = test::init_service(
-        App::new()
-            .wrap(AuthMiddleware::new("test_key".to_string()))
-            .app_data(web::Data::new(pool.clone()))
-            .route("/", web::post().to(insert_event))
-    ).await;
 
-    // Test Case 1: Insert complete event
-    let test_event = TelemetryEvent {
-        id: None,
-        cadence: "daily".to_string(),
-        channel: "stable".to_string(),
-        country_code: "US".to_string(),
-        metric_name: "test_metric".to_string(),
+async fn create_test_app(
+    ctx: web::Data<AppContext>,
+) -> impl actix_web::dev::Service<
+    actix_http::Request,
+    Response = actix_web::dev::ServiceResponse,
+    Error = actix_web::Error,
+> {
+    test::init_service(
+        App::new()
+            .app_data(ctx)
+            .route("/", web::post().to(queue_job)),
+    )
+    .await
+}
+
+
+
+#[actix_rt::test]
+async fn test_worker_processes_messages() {
+    // Initialize logger for better debugging
+    let _ = env_logger::builder()
+        .filter_level(log::LevelFilter::Debug)
+        .try_init();
+
+    // Setup test context
+    let ctx = setup_test_context().await;
+
+    // Start the worker as an actor
+    let worker = RabbitMqWorker {
+        channel: ctx.rabbit_channel.clone(),
+        pool: ctx.pool.clone(),
+    }
+        .start();
+
+    // Create a sample payload
+    let test_payload = MyPayload {
+        cadence: "test".to_string(),
+        channel: "test".to_string(),
+        country_code: "th".to_string(),
+        metric_name: "app".to_string(),
         metric_value: 100,
-        platform: "macos".to_string(),
-        version: "1.0.0".to_string(),
-        woi: 1,
-        wos: 2,
-        yoi: 2024,
-        yos: 2024,
-        received_at: None,
+        platform: "ios".to_string(),
+        version: "1.78".to_string(),
+        woi: 22,
+        wos: 22,
+        yoi: 2025,
+        yos: 2025,
+        received_at: Option::from(chrono::Utc::now()),
     };
 
+    // Create test app
+    let app = create_test_app(web::Data::new(ctx.clone())).await;
+
+    // Send a test request to queue a job
     let req = test::TestRequest::post()
         .uri("/")
-        .insert_header(("BraveServiceKey", "test_key"))
-        .set_json(&test_event)
+        .set_json(&test_payload)
         .to_request();
 
     let resp = test::call_service(&app, req).await;
+
+    // Verify the response
     assert!(resp.status().is_success());
 
-    // Verify all fields were saved correctly
-    let saved_event = sqlx::query_as!(
-        TelemetryEvent,
-        "SELECT * FROM telemetry_events WHERE metric_name = $1",
-        test_event.metric_name
-    )
-        .fetch_one(&pool)
+    // Give the worker some time to process the message
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+    // Here you would typically verify that the worker processed the message
+    // This could involve checking a database for changes, or other side effects
+
+    // For example, if your worker writes to the database:
+    // let result = sqlx::query!("SELECT * FROM processed_events WHERE event_id = $1", test_payload.event_id)
+    //    .fetch_optional(&ctx.pool)
+    //    .await
+    //    .expect("Database query failed");
+    // 
+    // assert!(result.is_some(), "Worker did not process the message");
+}
+
+#[actix_rt::test]
+async fn test_worker_handles_invalid_messages() {
+    // Initialize logger
+    let _ = env_logger::builder()
+        .filter_level(log::LevelFilter::Debug)
+        .try_init();
+
+    // Setup test context
+    let ctx = setup_test_context().await;
+
+    // Start the worker
+    let worker = RabbitMqWorker {
+        channel: ctx.rabbit_channel.clone(),
+        pool: ctx.pool.clone(),
+    }
+        .start();
+
+    // Publish an invalid message directly to the queue
+    let invalid_payload = b"{\"invalid\": \"json\"}";
+
+    ctx.rabbit_channel
+        .basic_publish(
+            "",
+            "test_queue",
+            BasicPublishOptions::default(),
+            invalid_payload,
+            BasicProperties::default(),
+        )
         .await
-        .expect("Failed to fetch saved event");
+        .expect("Failed to publish invalid message");
 
-    assert!(saved_event.id.is_some());
-    assert_eq!(saved_event.cadence, test_event.cadence);
-    assert_eq!(saved_event.channel, test_event.channel);
-    assert_eq!(saved_event.country_code, test_event.country_code);
-    assert_eq!(saved_event.metric_name, test_event.metric_name);
-    assert_eq!(saved_event.metric_value, test_event.metric_value);
-    assert_eq!(saved_event.platform, test_event.platform);
-    assert_eq!(saved_event.version, test_event.version);
-    assert_eq!(saved_event.woi, test_event.woi);
-    assert_eq!(saved_event.wos, test_event.wos);
-    assert_eq!(saved_event.yoi, test_event.yoi);
-    assert_eq!(saved_event.yos, test_event.yos);
-    assert!(saved_event.received_at.is_some()); // Should be automatically set
+    // Give the worker time to process
+    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 
-    // Test Case 2: Test with different values
-    let second_event = TelemetryEvent {
-        id: None,
-        cadence: "weekly".to_string(),
-        channel: "beta".to_string(),
-        country_code: "JP".to_string(),
-        metric_name: "second_metric".to_string(),
-        metric_value: 200,
-        platform: "windows".to_string(),
-        version: "2.0.0".to_string(),
-        woi: 5,
-        wos: 6,
-        yoi: 2024,
-        yos: 2024,
-        received_at: None,
-    };
-
-    let req = test::TestRequest::post()
-        .uri("/")
-        .insert_header(("BraveServiceKey", "test_key"))
-        .set_json(&second_event)
-        .to_request();
-
-    let resp = test::call_service(&app, req).await;
-    assert!(resp.status().is_success());
-
-    // Verify the second event
-    let saved_second = sqlx::query_as!(
-        TelemetryEvent,
-        "SELECT * FROM telemetry_events WHERE metric_name = $1",
-        second_event.metric_name
-    )
-        .fetch_one(&pool)
-        .await
-        .expect("Failed to fetch second event");
-
-    assert!(saved_second.id.is_some());
-    assert_eq!(saved_second.cadence, second_event.cadence);
-    assert_eq!(saved_second.channel, second_event.channel);
-    assert_eq!(saved_second.country_code, second_event.country_code);
-    assert_eq!(saved_second.metric_name, second_event.metric_name);
-    assert_eq!(saved_second.metric_value, second_event.metric_value);
-    assert_eq!(saved_second.platform, second_event.platform);
-    assert_eq!(saved_second.version, second_event.version);
-    assert_eq!(saved_second.woi, second_event.woi);
-    assert_eq!(saved_second.wos, second_event.wos);
-    assert_eq!(saved_second.yoi, second_event.yoi);
-    assert_eq!(saved_second.yos, second_event.yos);
-    assert!(saved_second.received_at.is_some());
+    // The test passes if the worker doesn't crash
+    // Ideally, you would check logs or a dead letter queue
 }

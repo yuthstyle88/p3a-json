@@ -1,4 +1,4 @@
-use crate::TelemetryEvent;
+use crate::telemetry_event;
 use sqlx::PgPool;
 use std::sync::Once;
 use dotenvy::dotenv;
