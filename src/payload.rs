@@ -13,6 +13,5 @@ pub struct MyPayload {
     pub wos: i16,
     pub yoi: i16,
     pub yos: i16,
-    pub received_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
