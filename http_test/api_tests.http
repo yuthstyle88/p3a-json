@@ -1,5 +1,5 @@
 ### Test successful telemetry event insert
-POST http://localhost:8080
+POST http://localhost:8080/
 Content-Type: application/json
 BraveServiceKey: qztbjzBqJueQZLFkwTTJrieu8Vw3789u
 

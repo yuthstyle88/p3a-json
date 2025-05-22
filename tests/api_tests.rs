@@ -123,7 +123,6 @@ async fn test_worker_processes_messages() {
         wos: 22,
         yoi: 2025,
         yos: 2025,
-        received_at: Option::from(chrono::Utc::now()),
     };
 
     // Create test app
