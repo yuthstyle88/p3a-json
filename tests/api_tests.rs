@@ -9,6 +9,8 @@ use lapin::{
 };
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::sync::Arc;
+use aws_config::{load_defaults, BehaviorVersion};
+use aws_sdk_dynamodb::Client as DynamoDbClient;
 use telemetry_events::{
     payload::MyPayload,
     worker::{AppContext, RabbitMqWorker},
@@ -68,11 +70,13 @@ async fn setup_test_context() -> AppContext {
     let brave_service_key = std::env::var("BRAVE_SERVICE_KEY")
         .unwrap_or_else(|_| "test_brave_service_key".to_string());
     let rabbit_channel = setup_test_rabbitmq().await;
-
+    let config = load_defaults(BehaviorVersion::latest()).await;
+    let dynamodb_client = DynamoDbClient::new(&config);
     AppContext {
         pool,
         brave_service_key,
         rabbit_channel,
+        dynamodb_client,
     }
 }
 

@@ -7,7 +7,14 @@ use std::sync::Arc;
 use actix::Actor;
 use telemetry_events::queue_job::queue_job;
 use telemetry_events::worker::{AppContext, RabbitMqWorker};
-
+use aws_config::BehaviorVersion;
+use aws_types::region::Region;
+use star_constellation::api::client;
+use star_constellation::api::ppoprf::ppoprf::Server;
+use star_constellation::randomness::process_randomness_response;
+use star_constellation::randomness::testing::LocalFetcher;
+use telemetry_events::constellation::process_measurement;
+use telemetry_events::update2::update2_json;
 
 
 #[actix_web::main]
@@ -15,11 +22,43 @@ async fn main() -> std::io::Result<()> {
     dotenvy::dotenv().ok();
     env_logger::init();
 
+    let random_fetcher = LocalFetcher::new();
+
+    let measurements_1 = vec!["hello".as_bytes().to_vec(), "world".as_bytes().to_vec()];
+    let epoch = 0u8;
+
+    // ใช้ LocalFetcher เพื่อประเมิน randomness
+    let rrs = client::prepare_measurement(&measurements_1, epoch).unwrap();
+    let req = client::construct_randomness_request(&rrs);
+    let req_slice_vec: Vec<&[u8]> = req.iter().map(|v| v.as_slice()).collect();
+    let resp = random_fetcher.eval(&req_slice_vec, epoch).unwrap();
+
+    // access ข้อมูลจาก resp เพื่อต่อกับฟังก์ชันอื่นหรือ logic เพิ่มเติม
+    println!("Random response: <cannot print, LocalFetcherResponse does not implement Debug>");
+
+
     // Load environment variables
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL not set");
     let brave_service_key = std::env::var("BRAVE_SERVICE_KEY").expect("BRAVE_SERVICE_KEY not set");
     let rabbitmq_url = std::env::var("RABBITMQ_URL").expect("RABBITMQ_URL not set");
 
+    let endpoint = std::env::var("AWS_ENDPOINT").ok();
+    let region = std::env::var("AWS_REGION").unwrap_or_else(|_| "us-east-1".to_string());
+    let region = Region::new(region);
+    let sdk_config = aws_config::defaults(BehaviorVersion::latest())
+        .region(region)
+        .load()
+        .await;
+    
+    let db_config_builder = aws_sdk_dynamodb::config::Builder::from(&sdk_config);
+    let db_config = if let Some(endpoint_url) = endpoint {
+        db_config_builder.endpoint_url(endpoint_url).build()
+    } else {
+        db_config_builder.build()
+    };
+
+    let dynamodb_client = aws_sdk_dynamodb::Client::from_conf(db_config);
+    
     // Setup PostgreSQL connection pool
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -60,6 +99,7 @@ async fn main() -> std::io::Result<()> {
         pool,
         brave_service_key,
         rabbit_channel: arc_channel,
+        dynamodb_client
     };
 
     HttpServer::new(move || {
@@ -74,9 +114,20 @@ async fn main() -> std::io::Result<()> {
             }))
             // POST "/" ต้อง auth
             .service(
-                web::resource("/")
+                web::scope("/")
                     .wrap(telemetry_events::AuthMiddleware::new())
-                    .route(web::post().to(queue_job))
+                    .service(
+                        web::resource("")
+                            .route(web::post().to(queue_job))
+                    )
+                    .service(
+                        web::resource("update2/json")
+                            .route(web::post().to(update2_json))
+                    ).service(
+                        web::resource("process")
+                            .route(web::post().to(process_measurement))
+                    )
+                    
             )
         // เพิ่ม service, middleware อื่น ๆ ของคุณตรงนี้
     })

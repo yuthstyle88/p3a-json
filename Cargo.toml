@@ -21,9 +21,15 @@ futures-util = "0.3"
 serde = { version = "1", features = ["derive"] }
 lapin = "2.3"
 serde_json = "1"
-sqlx = { version = "0.7", features = ["runtime-tokio", "postgres", "macros", "chrono"] }
+sqlx = { version = "0.8.6", features = ["runtime-tokio", "postgres", "macros", "chrono"] }
+aws-config = "1"
+aws-sdk-dynamodb = "1"
+aws-types = "1"
 dotenvy = "0.15"
-env_logger = "0.10"
+env_logger = "0.11.8"
 log = "0.4"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 chrono = { version = "0.4", features = ["serde"] }
+thiserror = "2.0.12"
+star-constellation = "0.2.5"
+rand = "0.9.1"

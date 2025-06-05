@@ -15,3 +15,18 @@ pub struct MyPayload {
     pub yos: i16,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MyExtensionPayload {
+    pub app_id: String,
+    pub timestamp: chrono::NaiveDateTime,
+    pub version: String,
+    pub cohort: String,
+    pub cohort_name: String,
+    pub status: String,
+    pub package_name: String,
+    pub package_size: i64,
+    pub hash_sha256: String,
+    pub fp: String,
+    pub hash_base64: String,
+    pub download_urls: Vec<String>,
+}
