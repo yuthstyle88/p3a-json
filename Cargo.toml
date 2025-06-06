@@ -31,5 +31,4 @@ log = "0.4"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "2.0.12"
-star-constellation = "0.2.5"
-rand = "0.9.1"
+star-constellation = "0.2.3"

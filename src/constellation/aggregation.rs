@@ -122,6 +122,7 @@ mod tests {
             .map(|_| {
                 let rrs = client::prepare_measurement(&measurement, epoch).unwrap();
                 let req = client::construct_randomness_request(&rrs);
+                // let req = client::construct_message();
 
                 let req_slice_vec: Vec<&[u8]> =
                     req.iter().map(|v| v.as_slice()).collect();

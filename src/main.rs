@@ -10,8 +10,6 @@ use telemetry_events::worker::{AppContext, RabbitMqWorker};
 use aws_config::BehaviorVersion;
 use aws_types::region::Region;
 use star_constellation::api::client;
-use star_constellation::api::ppoprf::ppoprf::Server;
-use star_constellation::randomness::process_randomness_response;
 use star_constellation::randomness::testing::LocalFetcher;
 use telemetry_events::constellation::process_measurement;
 use telemetry_events::update2::update2_json;
@@ -106,28 +104,17 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(Logger::default())
             .app_data(web::Data::new(app_context.clone()))
-            // GET "/" ไม่ต้อง auth
             .route("/", web::get().to(|| async {
                 actix_web::HttpResponse::Ok()
                     .content_type("text/plain; charset=utf-8")
                     .body("Submission of privacy-preserving product analytics. See https://support.brave.com/hc/en-us/articles/9140465918093-What-is-P3A-in-Brave for details.")
             }))
-            // POST "/" ต้อง auth
             .service(
-                web::scope("/")
+                web::scope("/api/v1")
                     .wrap(telemetry_events::AuthMiddleware::new())
-                    .service(
-                        web::resource("")
-                            .route(web::post().to(queue_job))
-                    )
-                    .service(
-                        web::resource("update2/json")
-                            .route(web::post().to(update2_json))
-                    ).service(
-                        web::resource("process")
-                            .route(web::post().to(process_measurement))
-                    )
-                    
+                    .route("/p3a", web::post().to(queue_job))
+                    .route("/update2/json", web::post().to(update2_json))
+                    .route("/process", web::post().to(process_measurement))
             )
         // เพิ่ม service, middleware อื่น ๆ ของคุณตรงนี้
     })

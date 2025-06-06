@@ -5,6 +5,7 @@ pub mod queue_job;
 pub mod update2;
 pub mod error;
 pub mod constellation;
+pub mod response;
 
 // Export public items
 pub use crate::middleware::AuthMiddleware;

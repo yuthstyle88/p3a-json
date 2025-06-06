@@ -1,3 +1,4 @@
+use lapin::protocol::basic::Publish;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -16,17 +17,81 @@ pub struct MyPayload {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct MyExtensionPayload {
-    pub app_id: String,
-    pub timestamp: chrono::NaiveDateTime,
-    pub version: String,
+pub struct MyRequest {
+   pub request: Request,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Request {
+    #[serde(rename = "@os")]
+    pub at_os: String,
+    #[serde(rename = "@updater")]
+    pub updater: String,
+    pub acceptformat: String,
+    pub app: Vec<App>,
+    pub arch: String,
+    pub dedup: String,
+    pub hw: Hw,
+    pub ismachine: bool,
+    pub nacl_arch: String,
+    pub os: OsInfo,
+    pub prodchannel: String,
+    pub prodversion: String,
+    pub protocol: String,
+    pub requestid: String,
+    pub sessionid: String,
+    pub updaterchannel: String,
+    pub updaterversion: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct App {
+    pub appid: String,
     pub cohort: String,
-    pub cohort_name: String,
-    pub status: String,
-    pub package_name: String,
-    pub package_size: i64,
-    pub hash_sha256: String,
+    pub cohortname: String,
+    pub enabled: bool,
+    pub installdate: u64,
+    pub packages: Packages,
+    pub ping: Ping,
+    pub updatecheck: Option<UpdateCheck>,
+    pub version: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Packages {
+    #[serde(rename = "package")]
+    pub package_list: Vec<Package>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Package {
     pub fp: String,
-    pub hash_base64: String,
-    pub download_urls: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Ping {
+    pub ping_freshness: String,
+    pub rd: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UpdateCheck {}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Hw {
+    pub avx: bool,
+    pub physmemory: u64,
+    pub sse: bool,
+    pub sse2: bool,
+    pub sse3: bool,
+    pub sse41: bool,
+    pub sse42: bool,
+    pub ssse3: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct OsInfo {
+    pub arch: String,
+    pub platform: String,
+    pub version: String,
 }

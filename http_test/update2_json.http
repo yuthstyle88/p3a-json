@@ -1,0 +1,60 @@
+### Test request update2 json
+POST http://localhost:8080/api/v1/update2/json
+Content-Type: application/json
+BraveServiceKey: qztbjzBqJueQZLFkwTTJrieu8Vw3789u
+
+{
+  "request": {
+    "@os": "mac",
+    "@updater": "BraveComponentUpdater",
+    "acceptformat": "crx3,puff",
+    "app": [
+      {
+        "appid": "hajigopbbjhghbfimgkfmpenfkclmohk",
+        "cohort": "1:2tdl:",
+        "cohortname": "Stable",
+        "enabled": true,
+        "installdate": 6728,
+        "packages": {
+          "package": [
+            {
+              "fp": "1.831faa9e9d6295bb4969020664f48973e9b8c8bb322bd4aeaa5ac54bcb696979"
+            }
+          ]
+        },
+        "ping": {
+          "ping_freshness": "{3f0def47-b40f-45cb-bcbf-4690a7b8a962}",
+          "rd": 6730
+        },
+        "updatecheck": {},
+        "version": "3"
+      }
+    ],
+    "arch": "arm64",
+    "dedup": "cr",
+    "hw": {
+      "avx": false,
+      "physmemory": 128,
+      "sse": false,
+      "sse2": false,
+      "sse3": false,
+      "sse41": false,
+      "sse42": false,
+      "ssse3": false
+    },
+    "ismachine": true,
+    "nacl_arch": "arm",
+    "os": {
+      "arch": "arm64",
+      "platform": "Mac OS X",
+      "version": "14.7.5"
+    },
+    "prodchannel": "stable",
+    "prodversion": "135.1.0.2",
+    "protocol": "3.1",
+    "requestid": "{39b499f7-9e47-4a6f-96a1-5c145c6763ee}",
+    "sessionid": "{64658177-b26a-4b77-9be4-4987ba0ed449}",
+    "updaterchannel": "stable",
+    "updaterversion": "135.1.0.2"
+  }
+}
