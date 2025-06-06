@@ -85,3 +85,7 @@ BraveServiceKey: test_key
 
 ### Test invalid JSON
 GET http://localhost:8080/api/v1/p3a
+
+### Test  import json
+GET http://localhost:8080/api/v1/import
+BraveServiceKey: qztbjzBqJueQZLFkwTTJrieu8Vw3789u

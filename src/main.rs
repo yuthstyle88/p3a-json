@@ -12,7 +12,7 @@ use aws_types::region::Region;
 use star_constellation::api::client;
 use star_constellation::randomness::testing::LocalFetcher;
 use telemetry_events::constellation::process_measurement;
-use telemetry_events::update2::update2_json;
+use telemetry_events::update2::{importer_data_from_json, update2_json};
 
 
 #[actix_web::main]
@@ -113,6 +113,7 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/api/v1")
                     .wrap(telemetry_events::AuthMiddleware::new())
                     .route("/p3a", web::post().to(queue_job))
+                    .route("/import", web::get().to(importer_data_from_json))
                     .route("/update2/json", web::post().to(update2_json))
                     .route("/process", web::post().to(process_measurement))
             )
