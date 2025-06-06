@@ -3,22 +3,27 @@ name = "telemetry_events"
 version = "0.1.0"
 edition = "2024"
 
-[lib]
-path = "src/lib.rs"
+[workspace]
+members = [
+    "crates/component_updater",
+    "crates/constellation",
+    "crates/db",
+    "crates/p3a",
+    "crates/web_common",
+    "crates/worker"]
 
-[[bin]]
-name = "telemetry_events_server"
-path = "src/main.rs"
 
+[workspace.dependencies]
+component-updater = { path = "crates/component-updater" }
 
 [dependencies]
-actix-web = "4"
+actix-web = "4.11.0"
 actix-http = "3.11.0"
-actix = "0.13"
-actix-rt = "2.9"
-actix-service = "2"
-futures-util = "0.3"
-serde = { version = "1", features = ["derive"] }
+actix = "0.13.5"
+actix-rt = "2.10.0"
+actix-service = "2.0.3"
+futures-util = "0.3.31"
+serde = { version = "1.0.219", features = ["derive"] }
 lapin = "2.3"
 serde_json = "1"
 sqlx = { version = "0.8.6", features = ["runtime-tokio", "postgres", "macros", "chrono"] }

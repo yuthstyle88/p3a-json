@@ -11,7 +11,6 @@ pub async fn update2_json(
     let client = &ctx.dynamodb_client;
     let _payload = item.into_inner();
 
-    // ตัวอย่าง: อัปเดตฟิลด์หนึ่งใน DynamoDB
     let table_name = "Extensions";
     let id = "ID".to_string();
 
