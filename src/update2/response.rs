@@ -24,12 +24,19 @@ pub struct DayStart {
     pub elapsed_days: u64,
 }
 
+fn get_update_status(status: &str) -> String {
+    if status == "noupdate" {
+        "noupdate".to_string()
+    } else {
+        "ok".to_string()
+    }
+}
 impl ResponseRoot {
     pub fn to_json(data: &Vec<Extension>) -> ResponseRoot {
         let apps = data.iter().map(|ext| App {
             appid: ext.id.clone(),
             cohort: ext.cohort.clone(),
-            status: ext.status.clone(),
+            status: get_update_status(&ext.status),
             cohortname: ext.cohortname.clone(),
             ping: Default::default(),
             updatecheck: Default::default(),
@@ -38,8 +45,8 @@ impl ResponseRoot {
 
         ResponseRoot {
             response: Response {
-                server: "example_server".to_string(),
-                protocol: "1.0".to_string(),
+                server: "prod".to_string(),
+                protocol: "3.1".to_string(),
                 daystart: DayStart::default(),
                 app: apps,
             }
