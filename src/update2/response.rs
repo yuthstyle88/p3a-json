@@ -1,8 +1,5 @@
-use std::collections::HashMap;
-use aws_sdk_dynamodb::operation::batch_get_item::BatchGetItemOutput;
-use aws_sdk_dynamodb::types::AttributeValue;
 use serde::{Serialize};
-use crate::update2::Extension;
+use crate::update2::{gen_codebase_urls, Extension, UpdateCheck};
 use crate::update2::model::App;
 
 #[derive(Serialize, Debug, Default)]
@@ -33,15 +30,20 @@ fn get_update_status(status: &str) -> String {
 }
 impl ResponseRoot {
     pub fn to_json(data: &Vec<Extension>, protocol: &str) -> ResponseRoot {
-        let apps = data.iter().map(|ext| App {
+        let apps = data.iter().map(|ext| {
+            let urls = gen_codebase_urls(&ext.id);
+            let updatecheck = UpdateCheck{ status: "".to_string(), urls };
+            App {
             appid: ext.id.clone(),
             cohort: ext.cohort.clone(),
             status: get_update_status(&ext.status),
             cohortname: ext.cohortname.clone(),
             ping: Default::default(),
-            updatecheck: Default::default(),
+            updatecheck,
             manifest: Default::default(),
-        }).collect();
+           }
+        }
+        ).collect();
          
         ResponseRoot {
             response: Response {

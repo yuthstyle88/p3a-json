@@ -14,6 +14,15 @@ use aws_sdk_dynamodb::Client;
 use chrono::Utc;
 use tokio::time::{interval, Duration};
 use tokio::sync::RwLock;
+use crate::update2::{CodeBase, Urls};
+const CODEBASE_JSON: [&str; 6] = [
+    "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/",
+    "https://edgedl.me.gvt1.com/edgedl/release2/chrome_component/",
+    "http://dl.google.com/release2/chrome_component/",
+    "https://dl.google.com/release2/chrome_component/",
+    "http://www.google.com/dl/release2/chrome_component/",
+    "https://www.google.com/dl/release2/chrome_component/"
+];
 
 pub async fn importer_data_from_json(
     ctx: web::Data<AppContext>,
@@ -259,4 +268,8 @@ pub fn spawn_periodic_refresh(
             }
         }
     });
+}
+
+pub fn gen_codebase_urls(path_id: &str) -> Urls {
+    Urls { url: CODEBASE_JSON.iter().map(|c| CodeBase { codebase: format!("{}{}", c, path_id) }).collect() }
 }
