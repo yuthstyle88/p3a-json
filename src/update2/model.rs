@@ -1,5 +1,5 @@
 use chrono::DateTime;
-use serde::{Deserialize, Serialize, Deserializer};
+use serde::{Deserialize, Serialize, Deserializer, Serializer};
 use serde_json::Value;
 use crate::payload::Ping;
 
@@ -12,6 +12,9 @@ pub fn serial_to_bool(val: &str) -> bool {
 }
 pub fn serial_to_int(val: &str) -> i64 {
     val.trim().parse().unwrap_or(0)
+}
+pub fn serial_to_hash(val: &str) -> String {
+    val.replace("=", "\\u003d")
 }
 fn bool_from_string<'de, D>(deserializer: D) -> Result<bool, D::Error>
 where
@@ -28,6 +31,15 @@ where
     let s = String::deserialize(deserializer)?;
     Ok(serial_to_int(&s))
 }
+fn escape_equal<S>(value: &str, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let replaced = value.replace("=", "\\u003d");
+    serializer.serialize_str(&replaced)
+}
+
+
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct App {
     pub appid: String,
@@ -69,6 +81,7 @@ pub struct Package {
     pub fp: String,
     #[serde(deserialize_with = "bool_from_string")]
     pub required: bool,
+    #[serde(serialize_with = "escape_equal")]
     pub hash: String,
 }
 
