@@ -21,5 +21,8 @@ pub async fn update2_json(
     let items = Extension::filter_for_updates(&exts, &maps).await;
 
     let resp = ResponseRoot::to_json(&items, &protocol);
-    Ok(HttpResponse::Ok().json(resp))
+    let prefix = ")]}'\n";
+    Ok(HttpResponse::Ok()
+        .append_header(("Content-Type", "application/json"))
+        .body(format!("{}{}", prefix, serde_json::to_string(&resp).unwrap())))
 }
