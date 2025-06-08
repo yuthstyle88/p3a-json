@@ -1,6 +1,6 @@
 use aws_sdk_dynamodb::types::ScalarAttributeType::N;
 use serde::{Serialize};
-use sqlx::encode::IsNull::No;
+use crate::payload::Ping;
 use crate::update2::{gen_codebase_urls, get_daystart, Extension, UpdateCheck};
 use crate::update2::model::App;
 
@@ -47,12 +47,18 @@ impl ResponseRoot {
             }else{
                 let urls = gen_codebase_urls(&ext.id, &ext.version);
                 let updatecheck = UpdateCheck{ status: get_update_status(&ext.status.to_string()), urls };
+                let ping = Ping{
+                    status: Some("ok".to_string()),
+                    ping_freshness: None,
+                    rd: None,
+                    r: None,
+                }; 
                 App {
                     appid: ext.id.clone(),
                     cohort: Some(ext.cohort.clone()),
                     status: get_update_status(&ext.status),
                     cohortname: Some(ext.cohortname.clone()),
-                    ping: Default::default(),
+                    ping: Some(ping),
                     updatecheck: Some(updatecheck),
                     manifest: Default::default(),
                 }

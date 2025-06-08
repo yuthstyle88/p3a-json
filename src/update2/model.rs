@@ -1,15 +1,21 @@
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use crate::payload::Ping;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct App {
     pub appid: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cohort: Option<String>,
     pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub cohortname: Option<String>,
-    pub ping: Option<Status>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ping: Option<Ping>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub updatecheck: Option<UpdateCheck>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub manifest: Option<Manifest>,
 }
 
@@ -150,8 +156,11 @@ impl App {
             cohort: Some(value.get("cohort")?.as_str()?.to_string()),
             status: value.get("status")?.as_str()?.to_string(),
             cohortname: Some(value.get("cohortname")?.as_str()?.to_string()),
-            ping: Option::from(Status {
-                status: ping_status,
+            ping: Some(Ping {
+                status: Some(ping_status),
+                ping_freshness: None,
+                rd: None,
+                r: None,
             }),
             updatecheck: Some(updatecheck),
             manifest: Some(manifest),

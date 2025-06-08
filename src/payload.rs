@@ -69,8 +69,13 @@ pub struct Package {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Ping {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ping_freshness: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub rd: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub r: Option<i64>,
 }
 
