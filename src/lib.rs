@@ -5,7 +5,6 @@ pub mod queue_job;
 pub mod update2;
 pub mod error;
 pub mod constellation;
-pub mod response;
 
 // Export public items
 pub use crate::middleware::AuthMiddleware;
@@ -15,8 +14,8 @@ pub use crate::middleware::AuthMiddleware;
 
 pub mod middleware {
     use actix_web::{
-        dev::{ServiceRequest, ServiceResponse, Transform, forward_ready},
-        web, HttpResponse, Error,
+        dev::{forward_ready, ServiceRequest, ServiceResponse, Transform},
+        web, Error, HttpResponse,
     };
     use futures_util::future::{ok, LocalBoxFuture, Ready};
     use std::rc::Rc;

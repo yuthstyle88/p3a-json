@@ -1,154 +1,76 @@
-use std::fs::File;
+use std::collections::HashMap;
 use std::io::Read;
-use actix_web::{web, HttpResponse, Responder};
-use aws_sdk_dynamodb::types::{AttributeDefinition, AttributeValue, KeySchemaElement, KeyType, ProvisionedThroughput, ScalarAttributeType};
-use aws_sdk_dynamodb::error::{ProvideErrorMetadata, SdkError};
-use serde_json::Value;
-use crate::error::AppError;
-use crate::worker::AppContext;
-use crate::payload::MyRequest;
-use crate::update2::model::ChromeApp;
+use std::sync::Arc;
+use aws_sdk_dynamodb::operation::get_item::GetItemOutput;
+use chrono::DateTime;
+use tokio::sync::RwLock;
+use crate::update2::model::{App, Extension};
+use crate::update2::utils::extract_data;
 
-pub async fn update2_json(
-    ctx: web::Data<AppContext>,
-    item: web::Json<MyRequest>,
-) -> Result<impl Responder, AppError> {
-    let client = &ctx.dynamodb_client;
-    let _payload = item.into_inner();
-
-    // ตัวอย่าง: อัปเดตฟิลด์หนึ่งใน DynamoDB
-    let table_name = "Extensions";
-    let id = "ID".to_string();
-
-    let _ = is_not_exits_create_table(&client.clone()).await;
-    let result = client
-        .get_item()
-        .table_name(table_name)
-        .key("ID", AttributeValue::S(id.clone()))
-        .send()
-        .await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-
-    Ok(HttpResponse::Ok().json("app data"))
-}
-pub async fn importer_data_from_json(
-    ctx: web::Data<AppContext>,
-) -> Result<impl Responder, AppError> {
-    let client = &ctx.dynamodb_client;
-    let _ = insert_chrome_app(&client).await;
-    Ok(HttpResponse::Ok().json("success"))
-}
-
-pub async fn is_not_exits_create_table(client: &aws_sdk_dynamodb::Client) -> Result<(), AppError> {
-    let table_name = "Extensions";
-    let table_exists = match client
-        .describe_table()
-        .table_name(table_name)
-        .send()
-        .await
-    {
-        Ok(_) => true,
-        Err(err) => match &err {
-            SdkError::ServiceError { .. } if err.code() == Some("ResourceNotFoundException") => false,
-            _ => return Err(AppError::DatabaseError("DatabaseError".to_string())),
+impl Extension {
+    pub async fn filter_for_updates(
+        extensions: Vec<&GetItemOutput>,
+        all_extensions_map: &Arc<RwLock<HashMap<String, Extension>>>,
+    ) -> Vec<Extension> {
+        // Initialize a Vec to collect filtered extensions
+        let mut filtered_extensions = Vec::new();
+        let read_guard = all_extensions_map.read().await;
+        for ext_being_checked in extensions {
+            let being_checked: Extension = ext_being_checked.into();    // <== implement from_value()
+            if let Some(found_extension) = read_guard.get(&being_checked.id) {
+                let status = compare_versions(&being_checked.version, &found_extension.version);
+                if !found_extension.blacklisted && status <= 0 {
+                    let mut ext = found_extension.clone();
+                    if status == 0 {
+                        ext.status = "noupdate".to_owned();
+                    }
+                    ext.fp = being_checked.fp.clone();
+                    filtered_extensions.push(ext);
+                }
+            }
         }
-    };
-    
-    if table_exists {
-        return Ok(());
+        // Return the collected filtered extensions; update return type to Vec<Extension>
+        filtered_extensions
     }
-    
-    let attr_def = AttributeDefinition::builder()
-        .attribute_name("ID")
-        .attribute_type(ScalarAttributeType::S)
-        .build()
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-
-    let key_schema = KeySchemaElement::builder()
-        .attribute_name("ID")
-        .key_type(KeyType::Hash)
-        .build()
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-
-    let provisioned_throughput = ProvisionedThroughput::builder()
-        .read_capacity_units(5)
-        .write_capacity_units(5)
-        .build()
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-
-    client
-        .create_table()
-        .table_name(table_name)
-        .attribute_definitions(attr_def)
-        .key_schema(key_schema)
-        .provisioned_throughput(provisioned_throughput)
-        .send()
-        .await
-        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
-
-    Ok(())
 }
-
-pub async fn insert_chrome_app(client: &aws_sdk_dynamodb::Client) -> Result<(), AppError>{
-
-    let mut file = File::open("./extensions.json")?;
-    let mut data = String::new();
-    file.read_to_string(&mut data)?;
-
-    // แปลง String เป็น Value สำหรับ parse
-    let records: Vec<Value> = serde_json::from_str(&data).map_err(|e| AppError::BadRequest(e.to_string()))?;
-
-    for record in &records {
-        let mut item = std::collections::HashMap::new();
-        if let Some(response) = record.get("response").and_then(|resp| resp.get("app"))
-        {
-            let app: ChromeApp = ChromeApp::from_value(&response[0]).unwrap();
-            let table_name = "Extensions";
-            item.insert("ID".to_string(), AttributeValue::S(app.appid.clone()));
-            item.insert("COHORT".to_string(), AttributeValue::S(app.cohort.clone()));
-            item.insert("STATUS".to_string(), AttributeValue::S(app.status.clone()));
-            item.insert("COHORTNAME".to_string(), AttributeValue::S(app.cohortname.clone()));
-            item.insert("PING_STATUS".to_string(), AttributeValue::S(app.ping_status.clone()));
-            item.insert("UPDATECHECK_STATUS".to_string(), AttributeValue::S(app.updatecheck_status.clone()));
-            item.insert("MANIFEST_VERSION".to_string(), AttributeValue::S(app.manifest_version.clone()));
-
-            // แปลง Vec<CodebaseUrl> เป็น AttributeValue::L
-            let urls_value = AttributeValue::L(
-                app.urls.iter()
-                    .map(|url| {
-                        let mut m = std::collections::HashMap::new();
-                        m.insert("CODEBASE".to_string(), AttributeValue::S(url.codebase.clone()));
-                        AttributeValue::M(m)
-                    })
-                    .collect()
-            );
-            item.insert("URLS".to_string(), urls_value);
-
-            // แปลง Vec<PackageInfo> เป็น AttributeValue::L
-            let packages_value = AttributeValue::L(
-                app.packages.iter()
-                    .map(|pkg| {
-                        let mut m = std::collections::HashMap::new();
-                        m.insert("HASH_SHA256".to_string(), AttributeValue::S(pkg.hash_sha256.clone()));
-                        m.insert("SIZE".to_string(), AttributeValue::N(pkg.size.to_string()));
-                        m.insert("NAME".to_string(), AttributeValue::S(pkg.name.clone()));
-                        m.insert("FP".to_string(), AttributeValue::S(pkg.fp.clone()));
-                        m.insert("REQUIRED".to_string(), AttributeValue::Bool(pkg.required));
-                        m.insert("HASH".to_string(), AttributeValue::S(pkg.hash.clone()));
-                        AttributeValue::M(m)
-                    })
-                    .collect()
-            );
-            item.insert("PACKAGES".to_string(), packages_value);
-
-            client
-                .put_item()
-                .table_name(table_name)
-                .set_item(Some(item))
-                .send()
-                .await
-                .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+impl From<&GetItemOutput> for Extension {
+    fn from(item: &GetItemOutput) -> Self {
+        Self{
+            id: extract_data("ID", item),
+            cohort: extract_data("COHORT", item),
+            cohortname: extract_data("COHORTNAME", item),
+            package_name: extract_data("PACKAGE_NAME", item),
+            version: extract_data("VERSION", item),
+            hash_sha256: extract_data("HASH_SHA256", item),
+            status: extract_data("STATUS", item),
+            fp: extract_data("FP", item),
+            blacklisted: extract_data("BLACKLISTED", item).parse::<bool>().unwrap_or_default(),
+            required: extract_data("REQUIRED", item).parse::<bool>().unwrap_or_default(),
+            hash: extract_data("HASH", item),
+            size: extract_data("SIZE", item).parse::<u64>().unwrap_or_default(),
+            created_at: DateTime::parse_from_rfc3339(&extract_data("CREATE_AT", item)).unwrap_or_default().with_timezone(&chrono::Utc),
+            update_at: DateTime::parse_from_rfc3339(&extract_data("UPDATE_AT", item)).unwrap_or_default().with_timezone(&chrono::Utc),
         }
     }
-    Ok(())
+}
+pub fn compare_versions(version1: &str, version2: &str) -> i32 {
+    let version1_parts: Vec<u32> = version1
+        .split('.')
+        .map(|s| s.parse::<u32>().unwrap_or(0))
+        .collect();
+    let version2_parts: Vec<u32> = version2
+        .split('.')
+        .map(|s| s.parse::<u32>().unwrap_or(0))
+        .collect();
+
+    let len = version1_parts.len().min(version2_parts.len());
+    for i in 0..len {
+        if version1_parts[i] < version2_parts[i] {
+            return -1;
+        }
+        if version1_parts[i] > version2_parts[i] {
+            return 1;
+        }
+    }
+    0
 }

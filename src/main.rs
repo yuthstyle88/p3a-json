@@ -1,4 +1,4 @@
-
+use std::collections::HashMap;
 use actix_web::{web, App, HttpServer};
 use actix_web::middleware::Logger;
 use sqlx::postgres::PgPoolOptions;
@@ -11,9 +11,10 @@ use aws_config::BehaviorVersion;
 use aws_types::region::Region;
 use star_constellation::api::client;
 use star_constellation::randomness::testing::LocalFetcher;
+use tokio::sync::RwLock;
 use telemetry_events::constellation::process_measurement;
 use telemetry_events::update2::{importer_data_from_json, update2_json};
-
+use telemetry_events::update2::model::Extension;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -30,6 +31,7 @@ async fn main() -> std::io::Result<()> {
     let req = client::construct_randomness_request(&rrs);
     let req_slice_vec: Vec<&[u8]> = req.iter().map(|v| v.as_slice()).collect();
     let resp = random_fetcher.eval(&req_slice_vec, epoch).unwrap();
+    let _map = Arc::new(RwLock::new(HashMap::<String, Extension>::new()));
 
     // access ข้อมูลจาก resp เพื่อต่อกับฟังก์ชันอื่นหรือ logic เพิ่มเติม
     println!("Random response: <cannot print, LocalFetcherResponse does not implement Debug>");
@@ -97,7 +99,8 @@ async fn main() -> std::io::Result<()> {
         pool,
         brave_service_key,
         rabbit_channel: arc_channel,
-        dynamodb_client
+        dynamodb_client,
+        map: Arc::new(RwLock::new(HashMap::new())),
     };
 
     HttpServer::new(move || {
@@ -116,6 +119,22 @@ async fn main() -> std::io::Result<()> {
                     .route("/import", web::get().to(importer_data_from_json))
                     .route("/update2/json", web::post().to(update2_json))
                     .route("/process", web::post().to(process_measurement))
+                    // .service(
+                    //     web::scope("/randsrv/instances")
+                    //         .route("/slow/randomness", web::post().to(process_measurement))
+                    //         .route("/express/randomness", web::post().to(process_measurement))
+                    //         .route("/typical/randomness", web::post().to(process_measurement))
+                    //         .route("/slow/info", web::post().to(process_measurement))
+                    //         .route("/express/info", web::post().to(process_measurement))
+                    //         .route("/typical/info", web::post().to(process_measurement))
+                    // )
+                    // .service(
+                    //     web::scope("/collector")
+                    //         .route("/creative", web::post().to(process_measurement))
+                    //         .route("/slow", web::post().to(process_measurement))
+                    //         .route("/express", web::post().to(process_measurement))
+                    //         .route("/typical", web::post().to(process_measurement))
+                    // )
             )
         // เพิ่ม service, middleware อื่น ๆ ของคุณตรงนี้
     })

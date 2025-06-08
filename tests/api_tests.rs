@@ -77,6 +77,7 @@ async fn setup_test_context() -> AppContext {
         brave_service_key,
         rabbit_channel,
         dynamodb_client,
+        map: Arc::new(Default::default()),
     }
 }
 
