@@ -15,7 +15,6 @@ use tokio::sync::RwLock;
 use telemetry_events::constellation::process_measurement;
 use telemetry_events::update2::{importer_data_from_json, init_from_dynamodb, scan_all_extensions, spawn_periodic_refresh, update2_json};
 use telemetry_events::update2::model::Extension;
-
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenvy::dotenv().ok();
@@ -93,7 +92,7 @@ async fn main() -> std::io::Result<()> {
         pool: pool.clone(),
     }
         .start();
-   let items = scan_all_extensions(&dynamodb_client,"Extensions").await.expect("Failed to scan all extensions");
+   let items = scan_all_extensions(&dynamodb_client).await.expect("Failed to scan all extensions");
     // Prepare AppContext and Actix Web server
     let app_context = Arc::new(AppContext {
         pool,
@@ -104,7 +103,7 @@ async fn main() -> std::io::Result<()> {
     });
 
     let table_name = "Extensions";
-    spawn_periodic_refresh(Arc::clone(&app_context), table_name.to_string());
+    spawn_periodic_refresh(Arc::clone(&app_context));
 
     HttpServer::new(move || {
         App::new()

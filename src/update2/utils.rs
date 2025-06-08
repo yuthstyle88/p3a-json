@@ -23,7 +23,7 @@ const CODEBASE_JSON: [&str; 6] = [
     "http://www.google.com/dl/release2/chrome_component/",
     "https://www.google.com/dl/release2/chrome_component/"
 ];
-
+const  TABLE_NAME: &str = "Extensions";
 pub async fn importer_data_from_json(
     ctx: web::Data<AppContext>,
 ) -> Result<impl Responder, AppError> {
@@ -33,7 +33,7 @@ pub async fn importer_data_from_json(
     Ok(HttpResponse::Ok().json("success"))
 }
 pub async fn is_not_exits_create_table(client: &Client) -> Result<(), AppError> {
-    let table_name = "Extensions";
+    let table_name = TABLE_NAME;
     let table_exists = match client.describe_table().table_name(table_name).send().await {
         Ok(_) => true,
         Err(err) => match &err {
@@ -80,7 +80,7 @@ pub async fn is_not_exits_create_table(client: &Client) -> Result<(), AppError> 
 }
 
 pub async fn insert_extensions(client: &aws_sdk_dynamodb::Client) -> Result<(), AppError> {
-    let table_name = "Extensions";
+    let table_name = TABLE_NAME;
     let mut file = File::open("./extensions.json")?;
     let mut data = String::new();
     file.read_to_string(&mut data)?;
@@ -133,9 +133,9 @@ pub async fn insert_extensions(client: &aws_sdk_dynamodb::Client) -> Result<(), 
 
 pub async fn batch_get_items_by_ids(
     client: &Client,
-    table_name: &str,
     ids: Vec<String>
 ) -> Result<Vec<Extension>, AppError> {
+    let table_name = TABLE_NAME;
     let keys: Vec<HashMap<String, AttributeValue>> = ids
         .into_iter()
         .map(|id| {
@@ -172,8 +172,8 @@ pub async fn batch_get_items_by_ids(
 
 pub async fn scan_all_extensions(
     client: &Client,
-    table_name: &str,
 ) -> Result<Vec<Extension>, AppError> {
+    let table_name = TABLE_NAME;
     let mut extensions = Vec::new();
     let mut last_evaluated_key: Option<std::collections::HashMap<String, AttributeValue>> = None;
 
@@ -244,15 +244,14 @@ pub fn init_from_dynamodb(
 }
 
 pub fn spawn_periodic_refresh(
-    app_context: Arc<AppContext>,      // สมมติว่า AppContext เป็น Arc อยู่แล้ว
-    table_name: String,
+    app_context: Arc<AppContext>,
 ) {
     tokio::spawn(async move {
         let mut interval = interval(Duration::from_secs(1200)); // 10 นาที = 600 วินาที
         loop {
             interval.tick().await;
 
-            match scan_all_extensions(&app_context.dynamodb_client, &table_name).await {
+            match scan_all_extensions(&app_context.dynamodb_client).await {
                 Ok(fresh_extensions) => {
                     let mut new_map = HashMap::new();
                     for ext in fresh_extensions {

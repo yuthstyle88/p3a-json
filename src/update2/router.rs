@@ -15,10 +15,9 @@ pub async fn update2_json(
     let client = &ctx.dynamodb_client;
     let maps = ctx.map.clone();
     let payload = item.into_inner();
-    let table_name = "Extensions";
     let keys = extract_appids(&payload);
 
-    let items = batch_get_items_by_ids(&client, table_name, keys).await?;
+    let items = batch_get_items_by_ids(&client,  keys).await?;
 
     let request: MyRequest =
         serde_json::from_value(payload).map_err(|e| AppError::SerdeError(e.to_string()))?;
