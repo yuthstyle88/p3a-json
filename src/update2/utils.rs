@@ -123,7 +123,7 @@ pub async fn batch_get_items_by_ids(
     client: &Client,
     table_name: &str,
     ids: Vec<String>
-) -> Result<Vec<HashMap<String, AttributeValue>>, AppError> {
+) -> Result<Vec<Extension>, AppError> {
     let keys: Vec<HashMap<String, AttributeValue>> = ids
         .into_iter()
         .map(|id| {
@@ -148,14 +148,14 @@ pub async fn batch_get_items_by_ids(
         .await
         .map_err(|e| AppError::DatabaseError(e.to_string()))?;
 
-    // คืน Vec<Item>
     let items = resp
         .responses()
         .and_then(|m| m.get(table_name))
         .cloned()
-        .unwrap_or_else(Vec::new);
-
-    Ok(items)
+        .unwrap_or_default();
+    
+    let extensions = items.into_iter().map(|v| v.into()).collect::<Vec<Extension>>();
+    Ok(extensions)
 }
 
 pub fn extract_data_from_get_item(field: &str, output: &GetItemOutput) -> String {
@@ -172,7 +172,7 @@ pub fn extract_data_from_have_map(field: &str, output: &HashMap<String, Attribut
         .and_then(|v| v.as_s().ok())
         .map(|s| s.to_owned())
         .unwrap_or_default()
-       
+
 }
 
 pub fn extract_appids(json: &Value) -> Vec<String> {

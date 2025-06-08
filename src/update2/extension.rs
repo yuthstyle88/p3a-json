@@ -17,7 +17,7 @@ impl Extension {
         let mut filtered_extensions = Vec::new();
         let read_guard = all_extensions_map.read().await;
         for ext_being_checked in extensions {
-            let being_checked: Extension = ext_being_checked.into();    // <== implement from_value()
+            let being_checked: Extension = ext_being_checked.clone().into();    // <== implement from_value()
             if let Some(found_extension) = read_guard.get(&being_checked.id) {
                 let status = compare_versions(&being_checked.version, &found_extension.version);
                 if !found_extension.blacklisted && status <= 0 {
@@ -35,23 +35,23 @@ impl Extension {
     }
 }
 
-impl From<&HashMap<String, AttributeValue>> for Extension {
-    fn from(item: &HashMap<String, AttributeValue>) -> Self {
+impl From<HashMap<String, AttributeValue>> for Extension {
+    fn from(item: HashMap<String, AttributeValue>) -> Self {
         Self{
-            id: extract_data_from_have_map("ID", item),
-            cohort: extract_data_from_have_map("COHORT", item),
-            cohortname: extract_data_from_have_map("COHORTNAME", item),
-            package_name: extract_data_from_have_map("PACKAGE_NAME", item),
-            version: extract_data_from_have_map("VERSION", item),
-            hash_sha256: extract_data_from_have_map("HASH_SHA256", item),
-            status: extract_data_from_have_map("STATUS", item),
-            fp: extract_data_from_have_map("FP", item),
-            blacklisted: extract_data_from_have_map("BLACKLISTED", item).parse::<bool>().unwrap_or_default(),
-            required: extract_data_from_have_map("REQUIRED", item).parse::<bool>().unwrap_or_default(),
-            hash: extract_data_from_have_map("HASH", item),
-            size: extract_data_from_have_map("SIZE", item).parse::<u64>().unwrap_or_default(),
-            created_at: DateTime::parse_from_rfc3339(&extract_data_from_have_map("CREATE_AT", item)).unwrap_or_default().with_timezone(&chrono::Utc),
-            update_at: DateTime::parse_from_rfc3339(&extract_data_from_have_map("UPDATE_AT", item)).unwrap_or_default().with_timezone(&chrono::Utc),
+            id: extract_data_from_have_map("ID", &item),
+            cohort: extract_data_from_have_map("COHORT", &item),
+            cohortname: extract_data_from_have_map("COHORTNAME", &item),
+            package_name: extract_data_from_have_map("PACKAGE_NAME", &item),
+            version: extract_data_from_have_map("VERSION", &item),
+            hash_sha256: extract_data_from_have_map("HASH_SHA256", &item),
+            status: extract_data_from_have_map("STATUS", &item),
+            fp: extract_data_from_have_map("FP", &item),
+            blacklisted: extract_data_from_have_map("BLACKLISTED", &item).parse::<bool>().unwrap_or_default(),
+            required: extract_data_from_have_map("REQUIRED", &item).parse::<bool>().unwrap_or_default(),
+            hash: extract_data_from_have_map("HASH", &item),
+            size: extract_data_from_have_map("SIZE", &item).parse::<u64>().unwrap_or_default(),
+            created_at: DateTime::parse_from_rfc3339(&extract_data_from_have_map("CREATE_AT", &item)).unwrap_or_default().with_timezone(&chrono::Utc),
+            update_at: DateTime::parse_from_rfc3339(&extract_data_from_have_map("UPDATE_AT", &item)).unwrap_or_default().with_timezone(&chrono::Utc),
         }
     }
 }
