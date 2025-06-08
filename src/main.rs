@@ -13,7 +13,7 @@ use star_constellation::api::client;
 use star_constellation::randomness::testing::LocalFetcher;
 use tokio::sync::RwLock;
 use telemetry_events::constellation::process_measurement;
-use telemetry_events::update2::{importer_data_from_json, init_from_dynamodb, scan_all_extensions, update2_json};
+use telemetry_events::update2::{importer_data_from_json, init_from_dynamodb, scan_all_extensions, spawn_periodic_refresh, update2_json};
 use telemetry_events::update2::model::Extension;
 
 #[actix_web::main]
@@ -95,18 +95,21 @@ async fn main() -> std::io::Result<()> {
         .start();
    let items = scan_all_extensions(&dynamodb_client,"Extensions").await.expect("Failed to scan all extensions");
     // Prepare AppContext and Actix Web server
-    let app_context = AppContext {
+    let app_context = Arc::new(AppContext {
         pool,
         brave_service_key,
         rabbit_channel: arc_channel,
         dynamodb_client,
         map: init_from_dynamodb(items),
-    };
+    });
+
+    let table_name = "Extensions";
+    spawn_periodic_refresh(Arc::clone(&app_context), table_name.to_string());
 
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
-            .app_data(web::Data::new(app_context.clone()))
+            .app_data(web::Data::from(app_context.clone()))
             .route("/", web::get().to(|| async {
                 actix_web::HttpResponse::Ok()
                     .content_type("text/plain; charset=utf-8")

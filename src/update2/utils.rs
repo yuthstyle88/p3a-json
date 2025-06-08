@@ -12,6 +12,7 @@ use std::io::Read;
 use std::sync::Arc;
 use aws_sdk_dynamodb::Client;
 use chrono::Utc;
+use tokio::time::{interval, Duration};
 use tokio::sync::RwLock;
 
 pub async fn importer_data_from_json(
@@ -231,4 +232,31 @@ pub fn init_from_dynamodb(
         db_map.insert(ext.id.clone(), ext);
     }
     Arc::new(RwLock::new(db_map))
+}
+
+pub fn spawn_periodic_refresh(
+    app_context: Arc<AppContext>,      // สมมติว่า AppContext เป็น Arc อยู่แล้ว
+    table_name: String,
+) {
+    tokio::spawn(async move {
+        let mut interval = interval(Duration::from_secs(1200)); // 10 นาที = 600 วินาที
+        loop {
+            interval.tick().await;
+
+            match scan_all_extensions(&app_context.dynamodb_client, &table_name).await {
+                Ok(fresh_extensions) => {
+                    let mut new_map = HashMap::new();
+                    for ext in fresh_extensions {
+                        new_map.insert(ext.id.clone(), ext); // เปลี่ยนเป็น key ที่ต้องการ
+                    }
+                    let mut map_writer = app_context.map.write().await;
+                    *map_writer = new_map;
+                    log::info!("Map refreshed successfully!");
+                }
+                Err(e) => {
+                    log::error!("Failed to refresh map: {e}");
+                }
+            }
+        }
+    });
 }
