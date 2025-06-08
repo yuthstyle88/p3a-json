@@ -2,7 +2,7 @@ use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct App {
     pub appid: String,
     pub cohort: String,
@@ -13,18 +13,18 @@ pub struct App {
     pub manifest: Manifest,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Status {
     pub status: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Manifest {
     pub version: String,
     pub packages: Packages,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Packages {
     pub package: Vec<Package>,
 }
@@ -39,14 +39,14 @@ pub struct Package {
     pub hash: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct UpdateCheck {
     pub status: String,
     #[serde(rename = "urls")]
     pub urls: Urls,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Urls {
     pub url: Vec<CodeBase>,
 }

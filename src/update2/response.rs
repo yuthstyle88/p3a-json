@@ -26,6 +26,6 @@ pub struct DayStart {
 
 impl ResponseRoot {
     pub fn to_json(data: &Vec<Extension>) -> Vec<App> {
-         Vec::new()
+         vec![App::default()]
     }
 }
