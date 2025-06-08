@@ -82,34 +82,37 @@ pub struct Extension {
 }
 impl Extension {
     pub fn from_value(value: &Value) -> Option<Self> {
+       
         let manifest_value = value.get("updatecheck")?.get("manifest")?;
-        let package = manifest_value
-            .get("packages")?
-            .get("package")?
-            .as_array()?
-            .first()?;
-
-        let version = manifest_value
-            .get("version")
+        
+        let version = manifest_value.get("version")
             .and_then(|v| v.as_str())
             .unwrap_or("0.0.0")
             .to_string();
-
+        let package = manifest_value.get("packages")?.get("package")?.get(0)?;
+        let name = package.get("name")?.as_str()?.to_string();
+        let hash_sha256= package.get("hash_sha256")?.as_str()?.to_string();
+        let fp = package.get("fp")?.as_str()?.to_string();
+        let required= package.get("required")?.as_bool()?;
+        let hash= package.get("hash")?.as_str()?.to_string();
+        let size= package.get("size")?.as_number()?.to_string();
+        println!("{:?}", package);
         Some(Self {
             id: value.get("appid")?.as_str()?.to_string(),
             cohort: value.get("cohort")?.as_str()?.to_string(),
             status: value.get("status")?.as_str()?.to_string(),
             cohortname: value.get("cohortname")?.as_str()?.to_string(),
             version,
-            name: package.get("name")?.as_str()?.to_string(),
-            hash_sha256: package.get("hash_sha256")?.as_str()?.to_string(),
-            fp: package.get("fp")?.as_str()?.to_string(),
+            name,
+            hash_sha256,
+            fp,
             blacklisted: false,
-            required: package.get("required")?.as_bool()?,
-            hash: package.get("hash")?.as_str()?.to_string(),
-            size: package.get("size")?.as_str()?.to_string(),
+            required,
+            hash,
+            size,
             created_at: Default::default(),
             update_at: Default::default(),
         })
+       
     }
 }

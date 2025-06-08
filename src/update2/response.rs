@@ -34,8 +34,8 @@ fn get_update_status(status: &str) -> String {
 pub fn gen_manifest(ext: &Extension) -> Manifest {
     let package = Package {
         hash_sha256: ext.hash_sha256.clone(),
-        size: ext.size,
-        name: ext.package_name.clone(),
+        size: ext.size.clone(),
+        name: ext.name.clone(),
         fp: ext.fp.clone(),
         required: ext.required,
         hash: ext.hash.clone(),
