@@ -9,8 +9,10 @@ use aws_sdk_dynamodb::types::{AttributeDefinition, AttributeValue, KeySchemaElem
 use serde_json::Value;
 use std::fs::File;
 use std::io::Read;
+use std::sync::Arc;
 use aws_sdk_dynamodb::Client;
 use chrono::Utc;
+use tokio::sync::RwLock;
 
 pub async fn importer_data_from_json(
     ctx: web::Data<AppContext>,
@@ -20,7 +22,7 @@ pub async fn importer_data_from_json(
     let _ = insert_extensions(&client).await;
     Ok(HttpResponse::Ok().json("success"))
 }
-pub async fn is_not_exits_create_table(client: &aws_sdk_dynamodb::Client) -> Result<(), AppError> {
+pub async fn is_not_exits_create_table(client: &Client) -> Result<(), AppError> {
     let table_name = "Extensions";
     let table_exists = match client.describe_table().table_name(table_name).send().await {
         Ok(_) => true,
@@ -158,6 +160,40 @@ pub async fn batch_get_items_by_ids(
     Ok(extensions)
 }
 
+pub async fn scan_all_extensions(
+    client: &Client,
+    table_name: &str,
+) -> Result<Vec<Extension>, AppError> {
+    let mut extensions = Vec::new();
+    let mut last_evaluated_key: Option<std::collections::HashMap<String, AttributeValue>> = None;
+
+    loop {
+        let mut scan_builder = client
+            .scan()
+            .table_name(table_name.to_owned());
+        if let Some(ref lek) = last_evaluated_key {
+            scan_builder = scan_builder.set_exclusive_start_key(Some(lek.clone()));
+        }
+
+        let resp = scan_builder
+            .send()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        if let Some(items) = resp.items {
+            for item in items {
+                extensions.push(item.into());
+            }
+        }
+        // เช็คว่ามีหน้าถัดไปหรือไม่ (DynamoDB จะคืน LastEvaluatedKey ถ้ายังสแกนไม่ครบ)
+        last_evaluated_key = resp.last_evaluated_key;
+        if last_evaluated_key.is_none() {
+            break;
+        }
+    }
+    Ok(extensions)
+}
+
 pub fn extract_data_from_get_item(field: &str, output: &GetItemOutput) -> String {
     output
         .item()
@@ -185,4 +221,14 @@ pub fn extract_appids(json: &Value) -> Vec<String> {
                 .collect()
         })
         .unwrap_or_default()
+}
+pub fn init_from_dynamodb(
+    items: Vec<Extension>,
+) -> Arc<RwLock<HashMap<String, Extension>>> {
+    let mut db_map = HashMap::new();
+    for item in items {
+        let ext: Extension = item.clone().into();
+        db_map.insert(ext.id.clone(), ext);
+    }
+    Arc::new(RwLock::new(db_map))
 }
