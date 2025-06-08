@@ -221,14 +221,34 @@ pub fn extract_data_from_have_map(field: &str, output: &HashMap<String, Attribut
 
 }
 
-pub fn extract_appids(json: &Value) -> Vec<String> {
+pub fn extract_appid_and_version(json: &Value) -> Vec<Extension> {
     json.get("request")
         .and_then(|req| req.get("app"))
         .and_then(|apps| apps.as_array())
         .map(|apps| {
             apps.iter()
-                .filter_map(|app| app.get("appid").and_then(|id| id.as_str()).map(|id| id.to_string()))
-                .collect()
+                .filter_map(|app| {
+                    let appid = app.get("appid").and_then(|id| id.as_str()).map(|id| id.to_string())?;
+                    let version = app.get("version").and_then(|v| v.as_str()).map(|v| v.to_string())?;
+                    Some(Extension{
+                        id: appid,
+                        cohort: "".to_string(),
+                        cohortname: "".to_string(),
+                        package_name: "".to_string(),
+                        version,
+                        hash_sha256: String::new(),
+                        status: "".to_string(),
+                        fp: String::new(),
+                        blacklisted: false,
+                        required: false,
+                        hash: String::new(),
+                        size: 0,
+                        // add other necessary fields with default/empty values as needed
+                        created_at: Default::default(),
+                        update_at: Default::default(),
+                    })
+                })
+                .collect::<Vec<Extension>>()
         })
         .unwrap_or_default()
 }

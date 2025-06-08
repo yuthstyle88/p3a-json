@@ -1,5 +1,5 @@
 use serde::{Serialize};
-use crate::update2::{gen_codebase_urls, get_daystart,  Extension, UpdateCheck};
+use crate::update2::{gen_codebase_urls, Extension, UpdateCheck};
 use crate::update2::model::App;
 
 #[derive(Serialize, Debug, Default)]
@@ -30,20 +30,21 @@ fn get_update_status(status: &str) -> String {
 }
 impl ResponseRoot {
     pub fn to_json(data: &Vec<Extension>, protocol: &str) -> ResponseRoot {
+        
         let apps = data.iter().map(|ext| {
             if ext.status == "noupdate" {
                 App {
                     appid: ext.id.clone(),
-                    cohort: None,
+                    cohort: Option::from(ext.cohort.clone()),
                     status: get_update_status(&ext.status),
-                    cohortname: None,
-                    ping: None,
-                    updatecheck:None,
+                    cohortname: Option::from(ext.cohortname.clone()),
+                    ping: Default::default(),
+                    updatecheck: None,
                     manifest: None,
                 }
-            } else {
+            }else{
                 let urls = gen_codebase_urls(&ext.id, &ext.version);
-                let updatecheck = UpdateCheck { status: ext.status.to_string(), urls };
+                let updatecheck = UpdateCheck{ status: ext.status.to_string(), urls };
                 App {
                     appid: ext.id.clone(),
                     cohort: Some(ext.cohort.clone()),
@@ -57,13 +58,12 @@ impl ResponseRoot {
             
         }
         ).collect();
-        let (days, seconds) = get_daystart();
-        let daystart = DayStart{ elapsed_seconds: seconds as u64, elapsed_days: days }; 
+         
         ResponseRoot {
             response: Response {
                 server: "prod".to_string(),
                 protocol: protocol.to_string(),
-                daystart,
+                daystart: DayStart::default(),
                 app: apps,
             }
         }
