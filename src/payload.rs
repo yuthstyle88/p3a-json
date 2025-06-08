@@ -46,11 +46,11 @@ pub struct Request {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct App {
     pub appid: String,
-    pub cohort: String,
-    pub cohortname: String,
+    pub cohort: Option<String>,
+    pub cohortname: Option<String>,
     pub enabled: bool,
-    pub installdate: u64,
-    pub packages: Packages,
+    pub installdate: i64,
+    pub packages: Option<Packages>,
     pub ping: Ping,
     pub updatecheck: Option<UpdateCheck>,
     pub version: String,
@@ -69,8 +69,9 @@ pub struct Package {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Ping {
-    pub ping_freshness: String,
-    pub rd: u64,
+    pub ping_freshness: Option<String>,
+    pub rd: Option<u64>,
+    pub r: Option<i64>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
