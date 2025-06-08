@@ -1,5 +1,5 @@
 use serde::{Serialize};
-use crate::update2::{gen_codebase_urls, Extension, UpdateCheck};
+use crate::update2::{gen_codebase_urls, get_daystart,  Extension, UpdateCheck};
 use crate::update2::model::App;
 
 #[derive(Serialize, Debug, Default)]
@@ -57,12 +57,13 @@ impl ResponseRoot {
             
         }
         ).collect();
-         
+        let (days, seconds) = get_daystart();
+        let daystart = DayStart{ elapsed_seconds: seconds as u64, elapsed_days: days }; 
         ResponseRoot {
             response: Response {
                 server: "prod".to_string(),
                 protocol: protocol.to_string(),
-                daystart: DayStart::default(),
+                daystart,
                 app: apps,
             }
         }

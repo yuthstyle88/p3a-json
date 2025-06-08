@@ -11,7 +11,7 @@ use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
 use aws_sdk_dynamodb::Client;
-use chrono::Utc;
+use chrono::{TimeZone, Timelike, Utc};
 use tokio::time::{interval, Duration};
 use tokio::sync::RwLock;
 use crate::update2::{CodeBase, Urls};
@@ -271,4 +271,13 @@ pub fn spawn_periodic_refresh(
 
 pub fn gen_codebase_urls(path_id: &str, version: &str) -> Urls {
     Urls { url: CODEBASE_JSON.iter().map(|c| CodeBase { codebase: format!("{}{}_{}", c, path_id, version) }).collect() }
+}
+pub fn get_daystart() -> (u64, u32) {
+    let start_date = Utc.ymd(2007, 1, 1).and_hms(0, 0, 0);
+    let now = Utc::now();
+
+    let elapsed_days = (now.date_naive() - start_date.date_naive()).num_days();
+    let elapsed_seconds = now.num_seconds_from_midnight();
+
+    (elapsed_days as u64, elapsed_seconds)
 }
