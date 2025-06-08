@@ -41,7 +41,7 @@ impl From<HashMap<String, AttributeValue>> for Extension {
             id: extract_data_from_have_map("ID", &item),
             cohort: extract_data_from_have_map("COHORT", &item),
             cohortname: extract_data_from_have_map("COHORTNAME", &item),
-            package_name: extract_data_from_have_map("PACKAGE_NAME", &item),
+            name: extract_data_from_have_map("NAME", &item),
             version: extract_data_from_have_map("VERSION", &item),
             hash_sha256: extract_data_from_have_map("HASH_SHA256", &item),
             status: extract_data_from_have_map("STATUS", &item),
@@ -49,7 +49,7 @@ impl From<HashMap<String, AttributeValue>> for Extension {
             blacklisted: extract_data_from_have_map("BLACKLISTED", &item).parse::<bool>().unwrap_or_default(),
             required: extract_data_from_have_map("REQUIRED", &item).parse::<bool>().unwrap_or_default(),
             hash: extract_data_from_have_map("HASH", &item),
-            size: extract_data_from_have_map("SIZE", &item).parse::<u64>().unwrap_or_default(),
+            size: extract_data_from_have_map("SIZE", &item),
             created_at: DateTime::parse_from_rfc3339(&extract_data_from_have_map("CREATE_AT", &item)).unwrap_or_default().with_timezone(&chrono::Utc),
             update_at: DateTime::parse_from_rfc3339(&extract_data_from_have_map("UPDATE_AT", &item)).unwrap_or_default().with_timezone(&chrono::Utc),
         }

@@ -1,7 +1,7 @@
 use aws_sdk_dynamodb::types::ScalarAttributeType::N;
 use serde::{Serialize};
 use crate::payload::Ping;
-use crate::update2::{gen_codebase_urls, get_daystart, Extension, UpdateCheck};
+use crate::update2::{gen_codebase_urls, gen_manifest, get_daystart, Extension, UpdateCheck};
 use crate::update2::model::App;
 
 #[derive(Serialize, Debug, Default)]
@@ -60,7 +60,7 @@ impl ResponseRoot {
                     cohortname: Some(ext.cohortname.clone()),
                     ping: Some(ping),
                     updatecheck: Some(updatecheck),
-                    manifest: Default::default(),
+                    manifest: Some(gen_manifest(&ext)),
                 }
             }
             

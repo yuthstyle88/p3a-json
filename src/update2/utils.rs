@@ -14,7 +14,7 @@ use aws_sdk_dynamodb::Client;
 use chrono::{TimeZone, Timelike, Utc};
 use tokio::time::{interval, Duration};
 use tokio::sync::RwLock;
-use crate::update2::{CodeBase, Urls};
+use crate::update2::{CodeBase, Manifest, Package, Packages, Urls};
 const CODEBASE_JSON: [&str; 6] = [
     "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/",
     "https://edgedl.me.gvt1.com/edgedl/release2/chrome_component/",
@@ -28,7 +28,7 @@ pub async fn importer_data_from_json(
     ctx: web::Data<AppContext>,
 ) -> Result<impl Responder, AppError> {
     let client = &ctx.dynamodb_client;
-    let _ = is_not_exits_create_table(&client.clone()).await;
+    // let _ = is_not_exits_create_table(&client.clone()).await;
     let _ = insert_extensions(&client).await;
     Ok(HttpResponse::Ok().json("success"))
 }
@@ -92,8 +92,7 @@ pub async fn insert_extensions(client: &aws_sdk_dynamodb::Client) -> Result<(), 
     for record in &records {
         if let Some(response) = record.get("response").and_then(|resp| resp.get("app")) {
             let mut item = std::collections::HashMap::new();
-            let app: App = App::from_value(&response[0]).unwrap();
-            let ext = Extension::from(app);
+            let ext: Extension = Extension::from_value(&response[0]).unwrap();
             item.insert("ID".to_string(), AttributeValue::S(ext.id.clone()));
             item.insert("COHORT".to_string(), AttributeValue::S(ext.cohort.clone()));
             item.insert(
@@ -102,7 +101,7 @@ pub async fn insert_extensions(client: &aws_sdk_dynamodb::Client) -> Result<(), 
             );
             item.insert(
                 "NAME".to_string(),
-                AttributeValue::S(ext.package_name.clone()),
+                AttributeValue::S(ext.name.clone()),
             );
             item.insert(
                 "VERSION".to_string(),
@@ -116,7 +115,7 @@ pub async fn insert_extensions(client: &aws_sdk_dynamodb::Client) -> Result<(), 
             item.insert("BLACKLISTED".to_string(), AttributeValue::Bool(ext.blacklisted.clone()));
             item.insert("REQUIRED".to_string(), AttributeValue::Bool(ext.required.clone()));
             item.insert("HASH".to_string(), AttributeValue::S(ext.hash.clone()));
-            item.insert("SIZE".to_string(), AttributeValue::N(ext.size.to_string()));
+            item.insert("SIZE".to_string(), AttributeValue::S(ext.size.to_string()));
             item.insert("CREATED_AT".to_string(), AttributeValue::S(Utc::now().naive_local().to_string()));
             item.insert("UPDATE_AT".to_string(), AttributeValue::S(Utc::now().naive_local().to_string()));
             client
@@ -234,7 +233,7 @@ pub fn extract_appid_and_version(json: &Value) -> Vec<Extension> {
                         id: appid,
                         cohort: "".to_string(),
                         cohortname: "".to_string(),
-                        package_name: "".to_string(),
+                        name: "".to_string(),
                         version,
                         hash_sha256: String::new(),
                         status: "".to_string(),
@@ -242,7 +241,7 @@ pub fn extract_appid_and_version(json: &Value) -> Vec<Extension> {
                         blacklisted: false,
                         required: false,
                         hash: String::new(),
-                        size: 0,
+                        size: "".to_string(),
                         // add other necessary fields with default/empty values as needed
                         created_at: Default::default(),
                         update_at: Default::default(),
@@ -291,6 +290,17 @@ pub fn spawn_periodic_refresh(
 
 pub fn gen_codebase_urls(path_id: &str, version: &str) -> Urls {
     Urls { url: CODEBASE_JSON.iter().map(|c| CodeBase { codebase: format!("{}{}_{}", c, path_id, version) }).collect() }
+}
+pub fn gen_manifest(ext: &Extension) -> Manifest {
+    let packages =  Packages{ package: vec![Package{
+        hash_sha256: ext.hash_sha256.to_string(),
+        size: ext.size.to_string(),
+        name: ext.name.to_string(),
+        fp: ext.fp.to_string(),
+        required: ext.required,
+        hash: ext.hash.to_string(),
+    }] };
+    Manifest{ version: ext.version.to_string(), packages}
 }
 pub fn get_daystart() -> (u64, u32) {
     let start_date = Utc.ymd(2007, 1, 1).and_hms(0, 0, 0);

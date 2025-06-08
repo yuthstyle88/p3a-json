@@ -8,12 +8,14 @@ use actix::Actor;
 use telemetry_events::queue_job::queue_job;
 use telemetry_events::worker::{AppContext, RabbitMqWorker};
 use aws_config::BehaviorVersion;
+use aws_sdk_dynamodb::Client;
 use aws_types::region::Region;
 use star_constellation::api::client;
 use star_constellation::randomness::testing::LocalFetcher;
 use tokio::sync::RwLock;
 use telemetry_events::constellation::process_measurement;
-use telemetry_events::update2::{importer_data_from_json, init_from_dynamodb, scan_all_extensions, spawn_periodic_refresh, update2_json};
+use telemetry_events::error::AppError;
+use telemetry_events::update2::{importer_data_from_json, init_from_dynamodb, is_not_exits_create_table, scan_all_extensions, spawn_periodic_refresh, update2_json};
 use telemetry_events::update2::model::Extension;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -92,6 +94,9 @@ async fn main() -> std::io::Result<()> {
         pool: pool.clone(),
     }
         .start();
+    
+    let _ = is_not_exits_create_table(&dynamodb_client).await;
+    
    let items = scan_all_extensions(&dynamodb_client).await.expect("Failed to scan all extensions");
     // Prepare AppContext and Actix Web server
     let app_context = Arc::new(AppContext {
@@ -101,8 +106,7 @@ async fn main() -> std::io::Result<()> {
         dynamodb_client,
         map: init_from_dynamodb(items),
     });
-
-    let table_name = "Extensions";
+    
     spawn_periodic_refresh(Arc::clone(&app_context));
 
     HttpServer::new(move || {

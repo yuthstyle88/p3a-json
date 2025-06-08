@@ -38,7 +38,7 @@ pub struct Packages {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Package {
     pub hash_sha256: String,
-    pub size: u64,
+    pub size: String,
     pub name: String,
     pub fp: String,
     pub required: bool,
@@ -67,7 +67,7 @@ pub struct Extension {
     pub id: String,
     pub cohort: String,
     pub cohortname: String,
-    pub package_name: String,
+    pub name: String,
     pub version: String,
     pub hash_sha256: String,
     pub status: String,
@@ -75,95 +75,41 @@ pub struct Extension {
     pub blacklisted: bool,
     pub required: bool,
     pub hash: String,
-    pub size: u64,
+    pub size: String,
     pub created_at: DateTime<chrono::Utc>,
     pub update_at: DateTime<chrono::Utc>,
     
 }
-impl From<App> for Extension {
-    fn from(value: App) -> Self {
-        Self {
-            id: value.appid,
-            cohort: value.cohort.unwrap_or_default(),
-            status: value.status,
-            cohortname: value.cohortname.unwrap_or_default(),
-            package_name: value.manifest.as_ref().unwrap().packages.package[0].name.clone(),
-            version: value.manifest.as_ref().unwrap().version.clone(),
-            hash_sha256: value.manifest.as_ref().unwrap().packages.package[0].hash_sha256.clone(),
-            fp: value.manifest.as_ref().unwrap().packages.package[0].fp.clone(),
-            blacklisted: false,
-            required: value.manifest.as_ref().unwrap().packages.package[0].required,
-            hash: value.manifest.as_ref().unwrap().packages.package[0].hash.clone(),
-            size: value.manifest.as_ref().unwrap().packages.package[0].size,
-            created_at: Default::default(),
-            update_at: Default::default(),
-        }
-    }
-}
-impl App {
+impl Extension {
     pub fn from_value(value: &Value) -> Option<Self> {
-        let ping_status = value.get("ping")?.get("status")?.as_str()?.to_string();
-        let updatecheck_value = value.get("updatecheck")?;
-        let manifest_value = updatecheck_value.get("manifest")?;
-        let packages: Vec<Package> = manifest_value
+        let manifest_value = value.get("updatecheck")?.get("manifest")?;
+        let package = manifest_value
             .get("packages")?
             .get("package")?
             .as_array()?
-            .iter()
-            .filter_map(|pkg| {
-                Some(Package {
-                    hash_sha256: pkg.get("hash_sha256")?.as_str()?.to_string(),
-                    size: pkg.get("size")?.as_u64()?,
-                    name: pkg.get("name")?.as_str()?.to_string(),
-                    fp: pkg.get("fp")?.as_str()?.to_string(),
-                    required: pkg.get("required")?.as_bool()?,
-                    hash: pkg.get("hash")?.as_str()?.to_string(),
-                })
-            })
-            .collect();
+            .first()?;
 
-        let url_vec: Vec<CodeBase> = updatecheck_value
-            .get("urls")?
-            .get("url")?
-            .as_array()?
-            .iter()
-            .filter_map(|url| {
-                url.get("codebase")
-                    .and_then(|s| s.as_str())
-                    .map(|c| CodeBase {
-                        codebase: c.to_string(),
-                    })
-            })
-            .collect();
-
-        let urls = Urls { url: url_vec };
-
-        let manifest = Manifest {
-            version: manifest_value.get("version")
-                .and_then(|v| v.as_str())
-                .unwrap_or("0.0.0")
-                .to_string(),
-            packages: Packages { package: packages },
-        };
-
-        let updatecheck = UpdateCheck {
-            status: updatecheck_value.get("status")?.as_str()?.to_string(),
-            urls,
-        };
+        let version = manifest_value
+            .get("version")
+            .and_then(|v| v.as_str())
+            .unwrap_or("0.0.0")
+            .to_string();
 
         Some(Self {
-            appid: value.get("appid")?.as_str()?.to_string(),
-            cohort: Some(value.get("cohort")?.as_str()?.to_string()),
+            id: value.get("appid")?.as_str()?.to_string(),
+            cohort: value.get("cohort")?.as_str()?.to_string(),
             status: value.get("status")?.as_str()?.to_string(),
-            cohortname: Some(value.get("cohortname")?.as_str()?.to_string()),
-            ping: Some(Ping {
-                status: Some(ping_status),
-                ping_freshness: None,
-                rd: None,
-                r: None,
-            }),
-            updatecheck: Some(updatecheck),
-            manifest: Some(manifest),
+            cohortname: value.get("cohortname")?.as_str()?.to_string(),
+            version,
+            name: package.get("name")?.as_str()?.to_string(),
+            hash_sha256: package.get("hash_sha256")?.as_str()?.to_string(),
+            fp: package.get("fp")?.as_str()?.to_string(),
+            blacklisted: false,
+            required: package.get("required")?.as_bool()?,
+            hash: package.get("hash")?.as_str()?.to_string(),
+            size: package.get("size")?.as_str()?.to_string(),
+            created_at: Default::default(),
+            update_at: Default::default(),
         })
     }
 }

@@ -13,13 +13,13 @@ pub async fn update2_json(
     let maps = ctx.map.clone();
     let payload = item.into_inner();
     let exts = extract_appid_and_version(&payload);
-    
+
     let request: MyRequest =
         serde_json::from_value(payload).map_err(|e| AppError::SerdeError(e.to_string()))?;
     let protocol = detect_protocol_version(&request);
 
     let items = Extension::filter_for_updates(&exts, &maps).await;
-    
+
     let resp = ResponseRoot::to_json(&items, &protocol);
     Ok(HttpResponse::Ok().json(resp))
 }
