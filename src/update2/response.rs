@@ -31,17 +31,30 @@ fn get_update_status(status: &str) -> String {
 impl ResponseRoot {
     pub fn to_json(data: &Vec<Extension>, protocol: &str) -> ResponseRoot {
         let apps = data.iter().map(|ext| {
-            let urls = gen_codebase_urls(&ext.id);
-            let updatecheck = UpdateCheck{ status: "".to_string(), urls };
-            App {
-            appid: ext.id.clone(),
-            cohort: ext.cohort.clone(),
-            status: get_update_status(&ext.status),
-            cohortname: ext.cohortname.clone(),
-            ping: Default::default(),
-            updatecheck,
-            manifest: Default::default(),
-           }
+            if ext.status == "noupdate" {
+                App {
+                    appid: ext.id.clone(),
+                    cohort: None,
+                    status: get_update_status(&ext.status),
+                    cohortname: None,
+                    ping: None,
+                    updatecheck:None,
+                    manifest: None,
+                }
+            } else {
+                let urls = gen_codebase_urls(&ext.id, &ext.version);
+                let updatecheck = UpdateCheck { status: ext.status.to_string(), urls };
+                App {
+                    appid: ext.id.clone(),
+                    cohort: Some(ext.cohort.clone()),
+                    status: get_update_status(&ext.status),
+                    cohortname: Some(ext.cohortname.clone()),
+                    ping: Default::default(),
+                    updatecheck: Some(updatecheck),
+                    manifest: Default::default(),
+                }
+            }
+            
         }
         ).collect();
          

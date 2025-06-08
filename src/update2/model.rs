@@ -5,12 +5,17 @@ use serde_json::Value;
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct App {
     pub appid: String,
-    pub cohort: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cohort: Option<String>,
     pub status: String,
-    pub cohortname: String,
-    pub ping: Status,
-    pub updatecheck: UpdateCheck,
-    pub manifest: Manifest,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cohortname: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ping: Option<Status>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub updatecheck: Option<UpdateCheck>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub manifest: Option<Manifest>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -78,17 +83,17 @@ impl From<App> for Extension {
     fn from(value: App) -> Self {
         Self {
             id: value.appid,
-            cohort: value.cohort,
+            cohort: value.cohort.unwrap_or_default(),
             status: value.status,
-            cohortname: value.cohortname,
-            package_name: value.manifest.packages.package[0].name.clone(),
-            version: value.manifest.version,
-            hash_sha256: value.manifest.packages.package[0].hash_sha256.clone(),
-            fp: value.manifest.packages.package[0].fp.clone(),
+            cohortname: value.cohortname.unwrap_or_default(),
+            package_name: value.manifest.as_ref().unwrap().packages.package[0].name.clone(),
+            version: value.manifest.as_ref().unwrap().version.clone(),
+            hash_sha256: value.manifest.as_ref().unwrap().packages.package[0].hash_sha256.clone(),
+            fp: value.manifest.as_ref().unwrap().packages.package[0].fp.clone(),
             blacklisted: false,
-            required: value.manifest.packages.package[0].required,
-            hash: value.manifest.packages.package[0].hash.clone(),
-            size: value.manifest.packages.package[0].size,
+            required: value.manifest.as_ref().unwrap().packages.package[0].required,
+            hash: value.manifest.as_ref().unwrap().packages.package[0].hash.clone(),
+            size: value.manifest.as_ref().unwrap().packages.package[0].size,
             created_at: Default::default(),
             update_at: Default::default(),
         }
@@ -147,14 +152,14 @@ impl App {
 
         Some(Self {
             appid: value.get("appid")?.as_str()?.to_string(),
-            cohort: value.get("cohort")?.as_str()?.to_string(),
+            cohort: Some(value.get("cohort")?.as_str()?.to_string()),
             status: value.get("status")?.as_str()?.to_string(),
-            cohortname: value.get("cohortname")?.as_str()?.to_string(),
-            ping: Status {
+            cohortname: Some(value.get("cohortname")?.as_str()?.to_string()),
+            ping: Some(Status {
                 status: ping_status,
-            },
-            updatecheck,
-            manifest,
+            }),
+            updatecheck: Some(updatecheck),
+            manifest: Some(manifest),
         })
     }
 }

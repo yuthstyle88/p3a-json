@@ -269,6 +269,6 @@ pub fn spawn_periodic_refresh(
     });
 }
 
-pub fn gen_codebase_urls(path_id: &str) -> Urls {
-    Urls { url: CODEBASE_JSON.iter().map(|c| CodeBase { codebase: format!("{}{}", c, path_id) }).collect() }
+pub fn gen_codebase_urls(path_id: &str, version: &str) -> Urls {
+    Urls { url: CODEBASE_JSON.iter().map(|c| CodeBase { codebase: format!("{}{}_{}", c, path_id, version) }).collect() }
 }
