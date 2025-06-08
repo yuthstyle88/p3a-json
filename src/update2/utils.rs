@@ -158,13 +158,21 @@ pub async fn batch_get_items_by_ids(
     Ok(items)
 }
 
-pub fn extract_data(field: &str, output: &GetItemOutput) -> String {
+pub fn extract_data_from_get_item(field: &str, output: &GetItemOutput) -> String {
     output
         .item()
         .and_then(|m| m.get(field))
         .and_then(|v| v.as_s().ok())
         .map(|s| s.to_owned())
         .unwrap_or_default()
+}
+pub fn extract_data_from_have_map(field: &str, output: &HashMap<String, AttributeValue>) -> String {
+    output
+        .get(field)
+        .and_then(|v| v.as_s().ok())
+        .map(|s| s.to_owned())
+        .unwrap_or_default()
+       
 }
 
 pub fn extract_appids(json: &Value) -> Vec<String> {

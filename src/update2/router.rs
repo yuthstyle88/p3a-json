@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::update2::{batch_get_items_by_ids, extract_appids};
+use crate::update2::{batch_get_items_by_ids, extract_appids, App, Extension, Response, ResponseRoot};
 use crate::worker::AppContext;
 use actix_web::{HttpResponse, Responder, web};
 use aws_sdk_dynamodb::types::AttributeValue;
@@ -17,22 +17,12 @@ pub async fn update2_json(
     let table_name = "Extensions";
     let keys = extract_appids(&payload);
 
-    let res = batch_get_items_by_ids(&client, table_name, keys).await?;
+    let items = batch_get_items_by_ids(&client, table_name, keys).await?;
+
+    let res =  ResponseRoot::to_json(&items);
     // Convert each DynamoDB item to a serializable serde_json::Value map
-    let json_items: Vec<Value> = res
-        .into_iter()
-        .map(|mut map| {
-            let obj: serde_json::Map<String, Value> = map
-                .drain()
-                .map(|(k, v)| {
-                    let v = attribute_value_to_json(&v);
-                    (k, v)
-                })
-                .collect();
-            Value::Object(obj)
-        })
-        .collect();
-    Ok(HttpResponse::Ok().json(json_items))
+  
+    Ok(HttpResponse::Ok().json(res))
 }
 
 fn attribute_value_to_json(av: &AttributeValue) -> Value {

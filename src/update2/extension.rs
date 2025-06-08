@@ -2,14 +2,15 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::sync::Arc;
 use aws_sdk_dynamodb::operation::get_item::GetItemOutput;
+use aws_sdk_dynamodb::types::AttributeValue;
 use chrono::DateTime;
 use tokio::sync::RwLock;
+use crate::update2::extract_data_from_have_map;
 use crate::update2::model::{App, Extension};
-use crate::update2::utils::extract_data;
 
 impl Extension {
     pub async fn filter_for_updates(
-        extensions: Vec<&GetItemOutput>,
+        extensions: &Vec<HashMap<String, AttributeValue>>,
         all_extensions_map: &Arc<RwLock<HashMap<String, Extension>>>,
     ) -> Vec<Extension> {
         // Initialize a Vec to collect filtered extensions
@@ -33,23 +34,24 @@ impl Extension {
         filtered_extensions
     }
 }
-impl From<&GetItemOutput> for Extension {
-    fn from(item: &GetItemOutput) -> Self {
+
+impl From<&HashMap<String, AttributeValue>> for Extension {
+    fn from(item: &HashMap<String, AttributeValue>) -> Self {
         Self{
-            id: extract_data("ID", item),
-            cohort: extract_data("COHORT", item),
-            cohortname: extract_data("COHORTNAME", item),
-            package_name: extract_data("PACKAGE_NAME", item),
-            version: extract_data("VERSION", item),
-            hash_sha256: extract_data("HASH_SHA256", item),
-            status: extract_data("STATUS", item),
-            fp: extract_data("FP", item),
-            blacklisted: extract_data("BLACKLISTED", item).parse::<bool>().unwrap_or_default(),
-            required: extract_data("REQUIRED", item).parse::<bool>().unwrap_or_default(),
-            hash: extract_data("HASH", item),
-            size: extract_data("SIZE", item).parse::<u64>().unwrap_or_default(),
-            created_at: DateTime::parse_from_rfc3339(&extract_data("CREATE_AT", item)).unwrap_or_default().with_timezone(&chrono::Utc),
-            update_at: DateTime::parse_from_rfc3339(&extract_data("UPDATE_AT", item)).unwrap_or_default().with_timezone(&chrono::Utc),
+            id: extract_data_from_have_map("ID", item),
+            cohort: extract_data_from_have_map("COHORT", item),
+            cohortname: extract_data_from_have_map("COHORTNAME", item),
+            package_name: extract_data_from_have_map("PACKAGE_NAME", item),
+            version: extract_data_from_have_map("VERSION", item),
+            hash_sha256: extract_data_from_have_map("HASH_SHA256", item),
+            status: extract_data_from_have_map("STATUS", item),
+            fp: extract_data_from_have_map("FP", item),
+            blacklisted: extract_data_from_have_map("BLACKLISTED", item).parse::<bool>().unwrap_or_default(),
+            required: extract_data_from_have_map("REQUIRED", item).parse::<bool>().unwrap_or_default(),
+            hash: extract_data_from_have_map("HASH", item),
+            size: extract_data_from_have_map("SIZE", item).parse::<u64>().unwrap_or_default(),
+            created_at: DateTime::parse_from_rfc3339(&extract_data_from_have_map("CREATE_AT", item)).unwrap_or_default().with_timezone(&chrono::Utc),
+            update_at: DateTime::parse_from_rfc3339(&extract_data_from_have_map("UPDATE_AT", item)).unwrap_or_default().with_timezone(&chrono::Utc),
         }
     }
 }
