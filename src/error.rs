@@ -11,7 +11,10 @@ pub enum AppError {
     InvalidId,
 
     #[error("Database error: {0}")]
-    DatabaseError(String),
+    DatabaseError(String),    
+    
+    #[error("SerdeError error: {0}")]
+    SerdeError(String),
 
     #[error("InternalError error: {0}")]
     InternalError(#[from] std::io::Error),
@@ -29,6 +32,9 @@ impl ResponseError for AppError {
                 HttpResponse::InternalServerError().body(self.to_string())
             },
             AppError::DatabaseError(_) => {
+                HttpResponse::InternalServerError().body(self.to_string())
+            },
+            AppError::SerdeError(_) => {
                 HttpResponse::InternalServerError().body(self.to_string())
             },
             AppError::InternalError(_) => {

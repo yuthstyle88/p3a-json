@@ -32,7 +32,7 @@ fn get_update_status(status: &str) -> String {
     }
 }
 impl ResponseRoot {
-    pub fn to_json(data: &Vec<Extension>) -> ResponseRoot {
+    pub fn to_json(data: &Vec<Extension>, protocol: &str) -> ResponseRoot {
         let apps = data.iter().map(|ext| App {
             appid: ext.id.clone(),
             cohort: ext.cohort.clone(),
@@ -42,11 +42,11 @@ impl ResponseRoot {
             updatecheck: Default::default(),
             manifest: Default::default(),
         }).collect();
-
+         
         ResponseRoot {
             response: Response {
                 server: "prod".to_string(),
-                protocol: "3.1".to_string(),
+                protocol: protocol.to_string(),
                 daystart: DayStart::default(),
                 app: apps,
             }

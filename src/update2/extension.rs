@@ -10,7 +10,7 @@ use crate::update2::model::{App, Extension};
 
 impl Extension {
     pub async fn filter_for_updates(
-        extensions: &Vec<HashMap<String, AttributeValue>>,
+        extensions: &Vec<Extension>,
         all_extensions_map: &Arc<RwLock<HashMap<String, Extension>>>,
     ) -> Vec<Extension> {
         // Initialize a Vec to collect filtered extensions

@@ -1,4 +1,3 @@
-use lapin::protocol::basic::Publish;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
