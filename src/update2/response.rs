@@ -1,7 +1,7 @@
 use crate::payload::Ping;
 use crate::update2::model::App;
-use crate::update2::{Extension, Manifest, UpdateCheck, gen_codebase_urls, get_daystart, Package, Packages};
-use aws_sdk_dynamodb::types::ScalarAttributeType::N;
+use crate::update2::{Extension, Manifest, UpdateCheck, gen_codebase_urls, get_daystart, Package, Packages, serial_to_bool};
+
 use serde::Serialize;
 
 #[derive(Serialize, Debug, Default)]
@@ -31,13 +31,14 @@ fn get_update_status(status: &str) -> String {
     }
 }
 
+
 pub fn gen_manifest(ext: &Extension) -> Manifest {
     let package = Package {
         hash_sha256: ext.hash_sha256.clone(),
-        size: ext.size.clone(),
+        size: ext.size.parse().unwrap(),
         name: ext.name.clone(),
         fp: ext.fp.clone(),
-        required: ext.required,
+        required: ext.required.parse().unwrap(),
         hash: ext.hash.clone(),
     };
 

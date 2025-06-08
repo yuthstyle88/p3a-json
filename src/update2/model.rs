@@ -1,8 +1,33 @@
 use chrono::DateTime;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Deserializer};
 use serde_json::Value;
 use crate::payload::Ping;
 
+pub fn serial_to_bool(val: &str) -> bool {
+    match val.trim().to_ascii_lowercase().as_str() {
+        "true" | "1" | "yes" => true,
+        "false" | "0" | "no" => false,
+        _ => false, // ถ้าไม่ตรงอะไรเลย กำหนดเป็น false
+    }
+}
+pub fn serial_to_int(val: &str) -> i64 {
+    val.trim().parse().unwrap_or(0)
+}
+fn bool_from_string<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    Ok(serial_to_bool(&s))
+}
+
+fn str_to_i64<'de, D>(deserializer: D) -> Result<i64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    Ok(serial_to_int(&s))
+}
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct App {
     pub appid: String,
@@ -38,9 +63,11 @@ pub struct Packages {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Package {
     pub hash_sha256: String,
-    pub size: String,
+    #[serde(deserialize_with = "str_to_i64")]
+    pub size: i64,
     pub name: String,
     pub fp: String,
+    #[serde(deserialize_with = "bool_from_string")]
     pub required: bool,
     pub hash: String,
 }
@@ -62,7 +89,7 @@ pub struct CodeBase {
     pub codebase: String,
 }
 
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct Extension {
     pub id: String,
     pub cohort: String,
@@ -72,8 +99,8 @@ pub struct Extension {
     pub hash_sha256: String,
     pub status: String,
     pub fp: String,
-    pub blacklisted: bool,
-    pub required: bool,
+    pub blacklisted: String,
+    pub required: String,
     pub hash: String,
     pub size: String,
     pub created_at: DateTime<chrono::Utc>,
@@ -81,6 +108,7 @@ pub struct Extension {
     
 }
 impl Extension {
+
     pub fn from_value(value: &Value) -> Option<Self> {
        
         let manifest_value = value.get("updatecheck")?.get("manifest")?;
@@ -93,10 +121,9 @@ impl Extension {
         let name = package.get("name")?.as_str()?.to_string();
         let hash_sha256= package.get("hash_sha256")?.as_str()?.to_string();
         let fp = package.get("fp")?.as_str()?.to_string();
-        let required= package.get("required")?.as_bool()?;
+        let required= package.get("required")?.as_bool()?.to_string();
         let hash= package.get("hash")?.as_str()?.to_string();
         let size= package.get("size")?.as_number()?.to_string();
-        println!("{:?}", package);
         Some(Self {
             id: value.get("appid")?.as_str()?.to_string(),
             cohort: value.get("cohort")?.as_str()?.to_string(),
@@ -106,7 +133,7 @@ impl Extension {
             name,
             hash_sha256,
             fp,
-            blacklisted: false,
+            blacklisted: "false".to_string(),
             required,
             hash,
             size,

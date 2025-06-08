@@ -112,8 +112,8 @@ pub async fn insert_extensions(client: &aws_sdk_dynamodb::Client) -> Result<(), 
                 AttributeValue::S(ext.hash_sha256.clone()),
             );
             item.insert("FP".to_string(), AttributeValue::S(ext.fp.clone()));
-            item.insert("BLACKLISTED".to_string(), AttributeValue::Bool(ext.blacklisted.clone()));
-            item.insert("REQUIRED".to_string(), AttributeValue::Bool(ext.required.clone()));
+            item.insert("BLACKLISTED".to_string(), AttributeValue::S(ext.blacklisted.clone()));
+            item.insert("REQUIRED".to_string(), AttributeValue::S(ext.required.clone()));
             item.insert("HASH".to_string(), AttributeValue::S(ext.hash.clone()));
             item.insert("SIZE".to_string(), AttributeValue::S(ext.size.to_string()));
             item.insert("CREATED_AT".to_string(), AttributeValue::S(Utc::now().naive_local().to_string()));
@@ -229,6 +229,11 @@ pub fn extract_appid_and_version(json: &Value) -> Vec<Extension> {
                 .filter_map(|app| {
                     let appid = app.get("appid").and_then(|id| id.as_str()).map(|id| id.to_string())?;
                     let version = app.get("version").and_then(|v| v.as_str()).map(|v| v.to_string())?;
+                    let mut fp = "".to_string();
+                    if let (Some(elm))  = app.get("packages")?.get("package")?.get(0) {
+                        fp = elm.get("fp")?.as_str()?.to_string();
+                    }
+                   
                     Some(Extension{
                         id: appid,
                         cohort: "".to_string(),
@@ -237,9 +242,9 @@ pub fn extract_appid_and_version(json: &Value) -> Vec<Extension> {
                         version,
                         hash_sha256: String::new(),
                         status: "".to_string(),
-                        fp: String::new(),
-                        blacklisted: false,
-                        required: false,
+                        fp,
+                        blacklisted: "false".to_string(),
+                        required: "true".to_string(),
                         hash: String::new(),
                         size: "".to_string(),
                         // add other necessary fields with default/empty values as needed
@@ -294,10 +299,10 @@ pub fn gen_codebase_urls(path_id: &str, version: &str) -> Urls {
 pub fn gen_manifest(ext: &Extension) -> Manifest {
     let packages =  Packages{ package: vec![Package{
         hash_sha256: ext.hash_sha256.to_string(),
-        size: ext.size.to_string(),
+        size: ext.size.to_string().parse().unwrap(),
         name: ext.name.to_string(),
         fp: ext.fp.to_string(),
-        required: ext.required,
+        required: ext.required.to_string().parse().unwrap(),
         hash: ext.hash.to_string(),
     }] };
     Manifest{ version: ext.version.to_string(), packages}

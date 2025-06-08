@@ -14,11 +14,18 @@ BraveServiceKey: qztbjzBqJueQZLFkwTTJrieu8Vw3789u
         "enabled": true,
         "installdate": -1,
         "installsource": "ondemand",
+        "packages": {
+          "package": [
+            {
+              "fp": "05173b826ce5aa2ee91afac2cf2e4bdde59dccd3c6d467b1da175d24ad646367"
+            }
+          ]
+        },
         "ping": {
           "r": -2
         },
         "updatecheck": {},
-        "version": "0.0.0.0"
+        "version": "1.0.1968"
       }
     ],
     "arch": "arm64",
@@ -43,8 +50,8 @@ BraveServiceKey: qztbjzBqJueQZLFkwTTJrieu8Vw3789u
     "prodchannel": "stable",
     "prodversion": "135.1.0.2",
     "protocol": "3.1",
-    "requestid": "{7af6aa6a-6fdd-4d03-a541-9850c288cc8a}",
-    "sessionid": "{ca7f454a-32f2-4da7-9fe3-e9d2df9aa464}",
+    "requestid": "{3579e388-4796-42d1-833e-447822287ad7}",
+    "sessionid": "{c9708bbe-3cc2-43aa-a8c1-733f72a502a6}",
     "updaterchannel": "stable",
     "updaterversion": "135.1.0.2"
   }

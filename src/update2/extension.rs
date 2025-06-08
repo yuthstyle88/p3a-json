@@ -20,7 +20,8 @@ impl Extension {
             let being_checked: Extension = ext_being_checked.clone().into();    // <== implement from_value()
             if let Some(found_extension) = read_guard.get(&being_checked.id) {
                 let status = compare_versions(&being_checked.version, &found_extension.version);
-                if !found_extension.blacklisted && status <= 0 {
+                let found = found_extension.blacklisted.parse::<bool>().unwrap();
+                if !found && status <= 0 {
                     let mut ext = found_extension.clone();
                     if status == 0 {
                         ext.status = "noupdate".to_owned();
@@ -46,8 +47,8 @@ impl From<HashMap<String, AttributeValue>> for Extension {
             hash_sha256: extract_data_from_have_map("HASH_SHA256", &item),
             status: extract_data_from_have_map("STATUS", &item),
             fp: extract_data_from_have_map("FP", &item),
-            blacklisted: extract_data_from_have_map("BLACKLISTED", &item).parse::<bool>().unwrap_or_default(),
-            required: extract_data_from_have_map("REQUIRED", &item).parse::<bool>().unwrap_or_default(),
+            blacklisted: extract_data_from_have_map("BLACKLISTED", &item),
+            required: extract_data_from_have_map("REQUIRED", &item),
             hash: extract_data_from_have_map("HASH", &item),
             size: extract_data_from_have_map("SIZE", &item),
             created_at: DateTime::parse_from_rfc3339(&extract_data_from_have_map("CREATE_AT", &item)).unwrap_or_default().with_timezone(&chrono::Utc),
