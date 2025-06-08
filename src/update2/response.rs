@@ -25,7 +25,24 @@ pub struct DayStart {
 }
 
 impl ResponseRoot {
-    pub fn to_json(data: &Vec<Extension>) -> Vec<App> {
-         vec![App::default()]
+    pub fn to_json(data: &Vec<Extension>) -> ResponseRoot {
+        let apps = data.iter().map(|ext| App {
+            appid: ext.id.clone(),
+            cohort: ext.cohort.clone(),
+            status: ext.status.clone(),
+            cohortname: ext.cohortname.clone(),
+            ping: Default::default(),
+            updatecheck: Default::default(),
+            manifest: Default::default(),
+        }).collect();
+
+        ResponseRoot {
+            response: Response {
+                server: "example_server".to_string(),
+                protocol: "1.0".to_string(),
+                daystart: DayStart::default(),
+                app: apps,
+            }
+        }
     }
 }
