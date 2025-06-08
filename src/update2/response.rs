@@ -46,7 +46,7 @@ impl ResponseRoot {
                 }
             }else{
                 let urls = gen_codebase_urls(&ext.id, &ext.version);
-                let updatecheck = UpdateCheck{ status: ext.status.to_string(), urls };
+                let updatecheck = UpdateCheck{ status: get_update_status(&ext.status.to_string()), urls };
                 App {
                     appid: ext.id.clone(),
                     cohort: Some(ext.cohort.clone()),

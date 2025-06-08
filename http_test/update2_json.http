@@ -11,23 +11,14 @@ BraveServiceKey: qztbjzBqJueQZLFkwTTJrieu8Vw3789u
     "app": [
       {
         "appid": "khaoiebndkojlmppeemjhbpbandiljpe",
-        "cohort": "1:2tdl:",
-        "cohortname": "Stable",
         "enabled": true,
-        "installdate": 6728,
-        "packages": {
-          "package": [
-            {
-              "fp": "1.831faa9e9d6295bb4969020664f48973e9b8c8bb322bd4aeaa5ac54bcb696979"
-            }
-          ]
-        },
+        "installdate": -1,
+        "installsource": "ondemand",
         "ping": {
-          "ping_freshness": "{3f0def47-b40f-45cb-bcbf-4690a7b8a962}",
-          "rd": 6730
+          "r": -2
         },
         "updatecheck": {},
-        "version": "3"
+        "version": "0.0.0.0"
       }
     ],
     "arch": "arm64",
@@ -52,8 +43,8 @@ BraveServiceKey: qztbjzBqJueQZLFkwTTJrieu8Vw3789u
     "prodchannel": "stable",
     "prodversion": "135.1.0.2",
     "protocol": "3.1",
-    "requestid": "{39b499f7-9e47-4a6f-96a1-5c145c6763ee}",
-    "sessionid": "{64658177-b26a-4b77-9be4-4987ba0ed449}",
+    "requestid": "{7af6aa6a-6fdd-4d03-a541-9850c288cc8a}",
+    "sessionid": "{ca7f454a-32f2-4da7-9fe3-e9d2df9aa464}",
     "updaterchannel": "stable",
     "updaterversion": "135.1.0.2"
   }
