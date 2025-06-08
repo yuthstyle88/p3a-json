@@ -1,4 +1,6 @@
+use aws_sdk_dynamodb::types::ScalarAttributeType::N;
 use serde::{Serialize};
+use sqlx::encode::IsNull::No;
 use crate::update2::{gen_codebase_urls, get_daystart, Extension, UpdateCheck};
 use crate::update2::model::App;
 
@@ -35,10 +37,10 @@ impl ResponseRoot {
             if ext.status == "noupdate" {
                 App {
                     appid: ext.id.clone(),
-                    cohort: Option::from(ext.cohort.clone()),
+                    cohort: None,
                     status: get_update_status(&ext.status),
-                    cohortname: Option::from(ext.cohortname.clone()),
-                    ping: Default::default(),
+                    cohortname: None,
+                    ping: None,
                     updatecheck: None,
                     manifest: None,
                 }
