@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use actix_web::{web, App, HttpServer};
 use actix_web::middleware::Logger;
 use sqlx::postgres::PgPoolOptions;
@@ -8,31 +7,14 @@ use actix::Actor;
 use telemetry_events::queue_job::queue_job;
 use telemetry_events::worker::{AppContext, RabbitMqWorker};
 use aws_config::BehaviorVersion;
-use aws_sdk_dynamodb::Client;
 use aws_types::region::Region;
-use star_constellation::api::client;
-use star_constellation::randomness::testing::LocalFetcher;
-use tokio::sync::RwLock;
 use telemetry_events::constellation::process_measurement;
-use telemetry_events::error::AppError;
 use telemetry_events::update2::{importer_data_from_json, init_from_dynamodb, is_not_exits_create_table, scan_all_extensions, spawn_periodic_refresh, update2_json};
-use telemetry_events::update2::model::Extension;
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenvy::dotenv().ok();
     env_logger::init();
-
-    let random_fetcher = LocalFetcher::new();
-
-    let measurements_1 = vec!["hello".as_bytes().to_vec(), "world".as_bytes().to_vec()];
-    let epoch = 0u8;
-
-    // ใช้ LocalFetcher เพื่อประเมิน randomness
-    let rrs = client::prepare_measurement(&measurements_1, epoch).unwrap();
-    let req = client::construct_randomness_request(&rrs);
-    let req_slice_vec: Vec<&[u8]> = req.iter().map(|v| v.as_slice()).collect();
-    let resp = random_fetcher.eval(&req_slice_vec, epoch).unwrap();
-    let _map = Arc::new(RwLock::new(HashMap::<String, Extension>::new()));
 
     // access ข้อมูลจาก resp เพื่อต่อกับฟังก์ชันอื่นหรือ logic เพิ่มเติม
     println!("Random response: <cannot print, LocalFetcherResponse does not implement Debug>");

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::error::AppError;
-use crate::update2::model::{App, Extension};
+use crate::update2::model::Extension;
 use crate::worker::AppContext;
 use actix_web::{HttpResponse, Responder, web};
 use aws_sdk_dynamodb::error::{ProvideErrorMetadata, SdkError};
@@ -14,7 +14,7 @@ use aws_sdk_dynamodb::Client;
 use chrono::{TimeZone, Timelike, Utc};
 use tokio::time::{interval, Duration};
 use tokio::sync::RwLock;
-use crate::update2::{CodeBase, Manifest, Package, Packages, Urls};
+use crate::update2::{CodeBase,  Urls};
 const CODEBASE_JSON: [&str; 6] = [
     "http://edgedl.me.gvt1.com/edgedl/release2/chrome_component/",
     "https://edgedl.me.gvt1.com/edgedl/release2/chrome_component/",
@@ -230,7 +230,7 @@ pub fn extract_appid_and_version(json: &Value) -> Vec<Extension> {
                     let appid = app.get("appid").and_then(|id| id.as_str()).map(|id| id.to_string())?;
                     let version = app.get("version").and_then(|v| v.as_str()).map(|v| v.to_string())?;
                     let mut fp = "".to_string();
-                    if let (Some(elm))  = app.get("packages")?.get("package")?.get(0) {
+                    if let Some(elm)  = app.get("packages")?.get("package")?.get(0) {
                         fp = elm.get("fp")?.as_str()?.to_string();
                     }
                    
@@ -296,19 +296,9 @@ pub fn spawn_periodic_refresh(
 pub fn gen_codebase_urls(path_id: &str, version: &str) -> Urls {
     Urls { url: CODEBASE_JSON.iter().map(|c| CodeBase { codebase: format!("{}{}_{}", c, path_id, version) }).collect() }
 }
-pub fn gen_manifest(ext: &Extension) -> Manifest {
-    let packages =  Packages{ package: vec![Package{
-        hash_sha256: ext.hash_sha256.to_string(),
-        size: ext.size.to_string().parse().unwrap(),
-        name: ext.name.to_string(),
-        fp: ext.fp.to_string(),
-        required: ext.required.to_string().parse().unwrap(),
-        hash: ext.hash.to_string(),
-    }] };
-    Manifest{ version: ext.version.to_string(), packages}
-}
+
 pub fn get_daystart() -> (u64, u32) {
-    let start_date = Utc.ymd(2007, 1, 1).and_hms(0, 0, 0);
+    let start_date = Utc.with_ymd_and_hms(2007, 1, 1, 0, 0, 0).unwrap();
     let now = Utc::now();
 
     let elapsed_days = (now.date_naive() - start_date.date_naive()).num_days();

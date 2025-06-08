@@ -1,12 +1,11 @@
 use std::collections::HashMap;
-use std::io::Read;
 use std::sync::Arc;
-use aws_sdk_dynamodb::operation::get_item::GetItemOutput;
 use aws_sdk_dynamodb::types::AttributeValue;
 use chrono::DateTime;
 use tokio::sync::RwLock;
-use crate::update2::extract_data_from_have_map;
-use crate::update2::model::{App, Extension};
+
+use crate::update2::model::Extension;
+use crate::update2::utils::extract_data_from_have_map;
 
 impl Extension {
     pub async fn filter_for_updates(

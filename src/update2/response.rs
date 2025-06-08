@@ -1,8 +1,9 @@
 use crate::payload::Ping;
 use crate::update2::model::App;
-use crate::update2::{Extension, Manifest, UpdateCheck, gen_codebase_urls, get_daystart, Package, Packages, serial_to_bool};
+use crate::update2::{Extension, Manifest, UpdateCheck, Package, Packages};
 
 use serde::Serialize;
+use crate::update2::utils::{gen_codebase_urls, get_daystart};
 
 #[derive(Serialize, Debug, Default)]
 pub struct ResponseRoot {

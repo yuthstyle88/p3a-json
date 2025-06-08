@@ -1,4 +1,3 @@
-use serde::{Deserialize};
 use crate::payload::MyRequest;
 /// Extension and Extensions – placeholder: adapt to your types
 #[derive(Debug, Clone)]

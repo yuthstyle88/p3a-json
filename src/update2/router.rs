@@ -1,10 +1,11 @@
 use crate::error::AppError;
 use crate::omaha::detect_protocol_version;
 use crate::payload::MyRequest;
-use crate::update2::{Extension,  ResponseRoot,  extract_appid_and_version};
+use crate::update2::{Extension,  ResponseRoot};
 use crate::worker::AppContext;
 use actix_web::{HttpResponse, Responder, web};
 use serde_json::Value;
+use crate::update2::utils::extract_appid_and_version;
 
 pub async fn update2_json(
     ctx: web::Data<AppContext>,
