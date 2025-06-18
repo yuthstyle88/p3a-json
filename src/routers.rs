@@ -6,7 +6,7 @@ use crate::constellation::handlers::instances::{process_instances_info, process_
 use crate::queue_job::queue_job;
 use crate::update2::importer_data_from_json;
 
-pub fn constellation_scope() -> impl HttpServiceFactory {
+pub fn service_scope() -> impl HttpServiceFactory {
     web::scope("/api/v1")
         .wrap(AuthMiddleware::new())
         .route("/p3a", web::post().to(queue_job))

@@ -7,7 +7,7 @@ use actix::Actor;
 use telemetry_events::worker::{AppContext, RabbitMqWorker};
 use aws_config::BehaviorVersion;
 use aws_types::region::Region;
-use telemetry_events::routers::constellation_scope;
+use telemetry_events::routers::service_scope;
 use telemetry_events::update2::{init_from_dynamodb, is_not_exits_create_table, scan_all_extensions, spawn_periodic_refresh};
 
 #[actix_web::main]
@@ -99,7 +99,7 @@ async fn main() -> std::io::Result<()> {
                     .content_type("text/plain; charset=utf-8")
                     .body("Submission of privacy-preserving product analytics. See https://support.brave.com/hc/en-us/articles/9140465918093-What-is-P3A-in-Brave for details.")
             }))
-            .service(constellation_scope()
+            .service(service_scope()
             )
 
         // เพิ่ม service, middleware อื่น ๆ ของคุณตรงนี้
