@@ -9,26 +9,28 @@ pub struct MeasureRequest {
     pub epoch: u8,
 }
 
-pub async fn process_instances_randomness(
+pub async fn process_instances_randomness(path: web::Path<String>,
     req: web::Json<MeasureRequest>,
 ) -> Result<impl Responder, AppError> {
     let msg = req.data.clone();
+    let speed = path.into_inner();
     let threshold = 2;
     let epoch = 1;
 
     // เตรียม measurement จากข้อความ
-    let agg_res = server::aggregate(&[msg], threshold, epoch, 2);
+    let _agg_res = server::aggregate(&[msg], threshold, epoch, 2);
 
     Ok(HttpResponse::Ok().body(format!(
-        "Random data points len: {}",
-        agg_res.outputs().len()
+         "speed : {}",
+         speed
     )))
 }
-pub async fn process_instances_info() -> Result<impl Responder, AppError> {
+pub async fn process_instances_info(path: web::Path<String>) -> Result<impl Responder, AppError> {
+    let speed = path.into_inner();
     let public_key = "public_key";
 
     Ok(HttpResponse::Ok().body(format!(
-        "public_key : {}",
-        public_key
+        "public_key : {}, speed : {}",
+        public_key, speed
     )))
 }

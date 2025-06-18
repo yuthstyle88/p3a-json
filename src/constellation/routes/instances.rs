@@ -3,8 +3,6 @@ use crate::constellation::handlers::instances::{process_instances_info, process_
 
 pub fn instances_scope() -> Scope {
     web::scope("/instances")
-        .route("/creative", web::post().to(process_instances_randomness))
-        .route("/slow", web::post().to(process_instances_info))
-        .route("/typical", web::post().to(process_instances_info))
-        .route("/express", web::post().to(process_instances_info))
+        .route("/{speed}/info", web::post().to(process_instances_info))
+        .route("/{speed}/randomness", web::post().to(process_instances_randomness))
 }
