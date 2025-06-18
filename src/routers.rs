@@ -8,16 +8,17 @@ use crate::update2::importer_data_from_json;
 
 pub fn service_scope() -> impl HttpServiceFactory {
     web::scope("/api/v1")
-        .wrap(AuthMiddleware::new())
-        .route("/p3a", web::post().to(queue_job))
-        .route("/import", web::get().to(importer_data_from_json))
-        .route("/{speed}", web::post().to(process_collector_express))
         .service(
             web::scope("/instances")
-                .route("/{speed}/info", web::post().to(process_instances_info)),
+                .route("/{speed}/info", web::get().to(process_instances_info)),
         )
         .service(
             web::scope("/collector")
                 .route("/{speed}/randomness", web::post().to(process_instances_randomness)),
         )
+        // .wrap(AuthMiddleware::new())
+        .route("/p3a", web::post().to(queue_job))
+        .route("/import", web::get().to(importer_data_from_json))
+        .route("/{speed}", web::post().to(process_collector_express))
+        
 }
