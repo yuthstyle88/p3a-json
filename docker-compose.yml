@@ -57,12 +57,11 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=yongyutjantaboot
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
-      - POSTGRES_DB=telemetry_db
-      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_USER=p3a
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-xD25pcSecure}
+      - POSTGRES_DB=p3a_db
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yongyutjantaboot}" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-p3a}" ]
       interval: 5s
       retries: 5
       timeout: 10s
