@@ -5,7 +5,7 @@ use star_constellation::api::server;
 
 #[derive(Deserialize, Clone)]
 pub struct MeasureRequest {
-    pub data: Vec<u8>,
+    pub data: String,
     pub epoch: u8,
 }
 
@@ -18,7 +18,7 @@ pub async fn process_instances_randomness(path: web::Path<String>,
     let epoch = 1;
 
     // เตรียม measurement จากข้อความ
-    let _agg_res = server::aggregate(&[msg], threshold, epoch, 2);
+    let _agg_res = server::aggregate(&[Vec::from(msg)], threshold, epoch, 2);
 
     Ok(HttpResponse::Ok().body(format!(
          "speed : {}",

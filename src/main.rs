@@ -4,12 +4,11 @@ use sqlx::postgres::PgPoolOptions;
 use lapin::{Connection, ConnectionProperties, options::QueueDeclareOptions, types::FieldTable};
 use std::sync::Arc;
 use actix::Actor;
-use telemetry_events::queue_job::queue_job;
 use telemetry_events::worker::{AppContext, RabbitMqWorker};
 use aws_config::BehaviorVersion;
 use aws_types::region::Region;
-use telemetry_events::constellation::constellation_scope;
-use telemetry_events::update2::{importer_data_from_json, init_from_dynamodb, is_not_exits_create_table, scan_all_extensions, spawn_periodic_refresh, update2_json};
+use telemetry_events::routers::constellation_scope;
+use telemetry_events::update2::{init_from_dynamodb, is_not_exits_create_table, scan_all_extensions, spawn_periodic_refresh};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -100,30 +99,12 @@ async fn main() -> std::io::Result<()> {
                     .content_type("text/plain; charset=utf-8")
                     .body("Submission of privacy-preserving product analytics. See https://support.brave.com/hc/en-us/articles/9140465918093-What-is-P3A-in-Brave for details.")
             }))
-            .service(
-                web::scope("/api/v1")
-                    .wrap(telemetry_events::AuthMiddleware::new())
-                    .route("/p3a", web::post().to(queue_job))
-                    .route("/import", web::get().to(importer_data_from_json))
-                    
-                    // .route("/p3a-creative", web::post().to(p3a_creative))
-                    // .service(
-                    //     web::scope("/instances")
-                    //         .route("/{speed}/randomness", web::post().to(process_instances_randomness))
-                    //         .route("/{speed}/info", web::get().to(process_instances_info))
-                    // )
-                    // .service(
-                    //     web::scope("/collector")
-                    //         .route("/creative", web::post().to(process_collector_creative))
-                    //         .route("/slow", web::post().to(process_collector_slow))
-                    //         .route("/express", web::post().to(process_collector_express))
-                    //         .route("/typical", web::post().to(process_collector_typical))
-                    // )
+            .service(constellation_scope()
             )
-            .service(constellation_scope())
+
         // เพิ่ม service, middleware อื่น ๆ ของคุณตรงนี้
     })
-        .bind(("0.0.0.0", 8080))?
+        .bind(("0.0.0.0", 8011))?
         .run()
         .await
 }

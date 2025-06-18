@@ -6,6 +6,7 @@ pub mod update2;
 pub mod error;
 pub mod constellation;
 pub mod omaha;
+pub mod routers;
 
 // Export public items
 pub use crate::middleware::AuthMiddleware;
