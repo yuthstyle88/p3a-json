@@ -8,7 +8,7 @@ use telemetry_events::queue_job::queue_job;
 use telemetry_events::worker::{AppContext, RabbitMqWorker};
 use aws_config::BehaviorVersion;
 use aws_types::region::Region;
-use telemetry_events::constellation::process_measurement;
+use telemetry_events::constellation::constellation_scope;
 use telemetry_events::update2::{importer_data_from_json, init_from_dynamodb, is_not_exits_create_table, scan_all_extensions, spawn_periodic_refresh, update2_json};
 
 #[actix_web::main]
@@ -105,25 +105,22 @@ async fn main() -> std::io::Result<()> {
                     .wrap(telemetry_events::AuthMiddleware::new())
                     .route("/p3a", web::post().to(queue_job))
                     .route("/import", web::get().to(importer_data_from_json))
-                    .route("/update2/json", web::post().to(update2_json))
-                    .route("/process", web::post().to(process_measurement))
+                    
+                    // .route("/p3a-creative", web::post().to(p3a_creative))
                     // .service(
-                    //     web::scope("/randsrv/instances")
-                    //         .route("/slow/randomness", web::post().to(process_measurement))
-                    //         .route("/express/randomness", web::post().to(process_measurement))
-                    //         .route("/typical/randomness", web::post().to(process_measurement))
-                    //         .route("/slow/info", web::post().to(process_measurement))
-                    //         .route("/express/info", web::post().to(process_measurement))
-                    //         .route("/typical/info", web::post().to(process_measurement))
+                    //     web::scope("/instances")
+                    //         .route("/{speed}/randomness", web::post().to(process_instances_randomness))
+                    //         .route("/{speed}/info", web::get().to(process_instances_info))
                     // )
                     // .service(
                     //     web::scope("/collector")
-                    //         .route("/creative", web::post().to(process_measurement))
-                    //         .route("/slow", web::post().to(process_measurement))
-                    //         .route("/express", web::post().to(process_measurement))
-                    //         .route("/typical", web::post().to(process_measurement))
+                    //         .route("/creative", web::post().to(process_collector_creative))
+                    //         .route("/slow", web::post().to(process_collector_slow))
+                    //         .route("/express", web::post().to(process_collector_express))
+                    //         .route("/typical", web::post().to(process_collector_typical))
                     // )
             )
+            .service(constellation_scope())
         // เพิ่ม service, middleware อื่น ๆ ของคุณตรงนี้
     })
         .bind(("0.0.0.0", 8080))?

@@ -1,7 +1,7 @@
-use actix_web::{web, HttpResponse, Responder};
-use serde::Deserialize;
-use star_constellation::api::{ server};
 use crate::error::AppError;
+use actix_web::{HttpResponse, Responder, web};
+use serde::Deserialize;
+use star_constellation::api::server;
 
 #[derive(Deserialize, Clone)]
 pub struct MeasureRequest {
@@ -9,10 +9,10 @@ pub struct MeasureRequest {
     pub epoch: u8,
 }
 
-pub async fn process_measurement(
-    req: web::Json<MeasureRequest>
+pub async fn process_instances_randomness(
+    req: web::Json<MeasureRequest>,
 ) -> Result<impl Responder, AppError> {
-    let msg = req.data.clone();  
+    let msg = req.data.clone();
     let threshold = 2;
     let epoch = 1;
 
@@ -24,24 +24,29 @@ pub async fn process_measurement(
         agg_res.outputs().len()
     )))
 }
+pub async fn process_instances_info() -> Result<impl Responder, AppError> {
+    let public_key = "public_key";
 
+    Ok(HttpResponse::Ok().body(format!(
+        "public_key : {}",
+        public_key
+    )))
+}
 #[cfg(test)]
 mod tests {
-    use star_constellation::api::client;
-    use star_constellation::randomness::testing::{LocalFetcher, LocalFetcherResponse, PPOPRF_SERVER};
     use super::*;
+    use star_constellation::api::client;
+    use star_constellation::randomness::testing::{
+        LocalFetcher, LocalFetcherResponse, PPOPRF_SERVER,
+    };
 
-    fn get_eval_output_slice_vecs(
-        resp: &LocalFetcherResponse,
-    ) -> (Vec<&[u8]>, Vec<&[u8]>) {
+    fn get_eval_output_slice_vecs(resp: &LocalFetcherResponse) -> (Vec<&[u8]>, Vec<&[u8]>) {
         (
-            resp
-                .serialized_points
+            resp.serialized_points
                 .iter()
                 .map(|v| v.as_slice())
                 .collect(),
-            resp
-                .serialized_proofs
+            resp.serialized_proofs
                 .iter()
                 .map(|v| v.as_slice())
                 .collect(),
@@ -52,8 +57,7 @@ mod tests {
         // สร้างตัวอย่าง MeasureRequest
         let epoch = 0;
         let threshold = 1;
-        let measurement =
-            vec!["hello".as_bytes().to_vec(), "world".as_bytes().to_vec()];
+        let measurement = vec!["hello".as_bytes().to_vec(), "world".as_bytes().to_vec()];
         let random_fetcher = LocalFetcher::new();
         let aux = "added_data".as_bytes().to_vec();
         let rrs = client::prepare_measurement(&measurement, epoch).unwrap();
@@ -61,8 +65,7 @@ mod tests {
 
         let req_slice_vec: Vec<&[u8]> = req.iter().map(|v| v.as_slice()).collect();
         let resp = random_fetcher.eval(&req_slice_vec, epoch).unwrap();
-        let (points_slice_vec, proofs_slice_vec) =
-            get_eval_output_slice_vecs(&resp);
+        let (points_slice_vec, proofs_slice_vec) = get_eval_output_slice_vecs(&resp);
 
         let msg = client::construct_message(
             &points_slice_vec,
@@ -72,7 +75,7 @@ mod tests {
             &aux,
             threshold,
         )
-            .unwrap();
+        .unwrap();
 
         // เรียกใช้ aggregate
         let agg_res = server::aggregate(&[msg], threshold, epoch, 2);
@@ -87,16 +90,14 @@ mod tests {
     fn incompatible_epoch() {
         let c_epoch = 0u8;
         let threshold = 1;
-        let measurement =
-            vec!["hello".as_bytes().to_vec(), "world".as_bytes().to_vec()];
+        let measurement = vec!["hello".as_bytes().to_vec(), "world".as_bytes().to_vec()];
         let random_fetcher = LocalFetcher::new();
         let rrs = client::prepare_measurement(&measurement, c_epoch).unwrap();
         let req = client::construct_randomness_request(&rrs);
 
         let req_slice_vec: Vec<&[u8]> = req.iter().map(|v| v.as_slice()).collect();
         let resp = random_fetcher.eval(&req_slice_vec, c_epoch).unwrap();
-        let (points_slice_vec, proofs_slice_vec) =
-            get_eval_output_slice_vecs(&resp);
+        let (points_slice_vec, proofs_slice_vec) = get_eval_output_slice_vecs(&resp);
 
         let msg = client::construct_message(
             &points_slice_vec,
@@ -106,7 +107,7 @@ mod tests {
             &[],
             threshold,
         )
-            .unwrap();
+        .unwrap();
         let agg_res = server::aggregate(&[msg], threshold, 1u8, 2);
         assert_eq!(agg_res.num_recovery_errors(), 1);
         assert_eq!(agg_res.outputs().len(), 0);
@@ -115,8 +116,7 @@ mod tests {
     fn incompatible_threshold() {
         let epoch = 0u8;
         let threshold = 3;
-        let measurement =
-            vec!["hello".as_bytes().to_vec(), "world".as_bytes().to_vec()];
+        let measurement = vec!["hello".as_bytes().to_vec(), "world".as_bytes().to_vec()];
         let random_fetcher = LocalFetcher::new();
         let messages: Vec<Vec<u8>> = (0..threshold - 1)
             .map(|_| {
@@ -124,11 +124,9 @@ mod tests {
                 let req = client::construct_randomness_request(&rrs);
                 // let req = client::construct_message();
 
-                let req_slice_vec: Vec<&[u8]> =
-                    req.iter().map(|v| v.as_slice()).collect();
+                let req_slice_vec: Vec<&[u8]> = req.iter().map(|v| v.as_slice()).collect();
                 let resp = random_fetcher.eval(&req_slice_vec, epoch).unwrap();
-                let (points_slice_vec, proofs_slice_vec) =
-                    get_eval_output_slice_vecs(&resp);
+                let (points_slice_vec, proofs_slice_vec) = get_eval_output_slice_vecs(&resp);
 
                 client::construct_message(
                     &points_slice_vec,
@@ -138,7 +136,7 @@ mod tests {
                     &[],
                     threshold,
                 )
-                    .unwrap()
+                .unwrap()
             })
             .collect();
         let agg_res = server::aggregate(&messages, threshold - 1, epoch, 2);
