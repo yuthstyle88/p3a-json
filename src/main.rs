@@ -78,17 +78,17 @@ async fn main() -> std::io::Result<()> {
     
     let _ = is_not_exits_create_table(&dynamodb_client).await;
     
-   let items = scan_all_extensions(&dynamodb_client).await.expect("Failed to scan all extensions");
+   // let items = scan_all_extensions(&dynamodb_client).await.expect("Failed to scan all extensions");
     // Prepare AppContext and Actix Web server
     let app_context = Arc::new(AppContext {
         pool,
         brave_service_key,
         rabbit_channel: arc_channel,
         dynamodb_client,
-        map: init_from_dynamodb(items),
+        map: Default::default(),
     });
     
-    spawn_periodic_refresh(Arc::clone(&app_context));
+    // spawn_periodic_refresh(Arc::clone(&app_context));
 
     HttpServer::new(move || {
         App::new()

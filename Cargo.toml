@@ -32,3 +32,5 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "2.0.12"
 star-constellation = "0.2.3"
+base64 = "0.22.1"
+anyhow = "1.0.98"

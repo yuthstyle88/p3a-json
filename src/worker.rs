@@ -17,7 +17,7 @@ pub struct AppContext {
     pub brave_service_key: String,
     pub rabbit_channel: Arc<Channel>,
     pub dynamodb_client: DynamoDbClient,
-    pub map: Arc<RwLock<HashMap<String, Extension>>>,  
+    pub map: Arc<RwLock<HashMap<String, Extension>>>,
 }
 
 pub struct RabbitMqWorker {
