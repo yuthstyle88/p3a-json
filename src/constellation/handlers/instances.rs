@@ -84,5 +84,6 @@ mod tests {
         let random_fetcher = RandomnessFetcher::new();
         let pk_bincode = random_fetcher.get_server().get_public_key().serialize_to_bincode().expect("Should serialize to bincode");
         let sss = BASE64_STANDARD.encode(&pk_bincode);
+        let sss = BASE64_STANDARD.encode(&pk_bincode);
     }
 }
