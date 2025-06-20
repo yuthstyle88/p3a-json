@@ -5,7 +5,7 @@ use futures_util::stream::StreamExt;
 use std::sync::Arc;
 use lapin::options::BasicAckOptions;
 
-use crate::telemetry_event::{insert_event, models::TelemetryEvent};
+use crate::domain::telemetry_event::{insert_event, models::TelemetryEvent};
 use aws_sdk_dynamodb::Client as DynamoDbClient;
 use tokio::sync::RwLock;
 use crate::update2::model::Extension;

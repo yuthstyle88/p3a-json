@@ -1,4 +1,3 @@
-pub mod telemetry_event;
 pub mod worker;
 pub mod payload;
 pub mod queue_job;
@@ -7,7 +6,7 @@ pub mod error;
 pub mod constellation;
 pub mod omaha;
 pub mod routers;
-pub mod model;
+pub mod domain;
 
 // Export public items
 pub use crate::middleware::AuthMiddleware;

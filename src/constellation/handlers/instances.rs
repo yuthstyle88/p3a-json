@@ -3,7 +3,7 @@ use crate::constellation::utils::{
     next_epoch_time_express, next_epoch_time_slow, next_epoch_time_typical,
 };
 use crate::error::AppError;
-use crate::model::public_key::PublicKey;
+use crate::domain::public_key::PublicKey;
 use crate::worker::AppContext;
 use actix_web::{HttpResponse, Responder, web};
 use base64::Engine;
