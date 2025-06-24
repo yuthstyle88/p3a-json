@@ -1,6 +1,5 @@
 use actix_web::{web::self};
 use actix_web::dev::HttpServiceFactory;
-use crate::AuthMiddleware;
 use crate::queue_job::queue_job;
 
 

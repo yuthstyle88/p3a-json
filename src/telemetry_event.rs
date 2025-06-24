@@ -20,32 +20,68 @@ pub mod models {
     }
 }
 
-pub async fn insert_event(
+pub async fn insert_events(
     pool: &sqlx::PgPool,
-    event: &models::TelemetryEvent,
+    events: &[models::TelemetryEvent],
 ) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        "INSERT INTO telemetry_events (
+    if events.is_empty() {
+        return Ok(());
+    }
+
+    // เตรียมข้อมูลแต่ละ column เป็น Vec
+    let cadence: Vec<&str> = events.iter().map(|e| e.cadence.as_str()).collect();
+    let channel: Vec<&str> = events.iter().map(|e| e.channel.as_str()).collect();
+    let country_code: Vec<&str> = events.iter().map(|e| e.country_code.as_str()).collect();
+    let metric_name: Vec<&str> = events.iter().map(|e| e.metric_name.as_str()).collect();
+    let metric_value: Vec<f64> = events.iter().map(|e| e.metric_value as f64).collect();
+    let platform: Vec<&str> = events.iter().map(|e| e.platform.as_str()).collect();
+    let version: Vec<&str> = events.iter().map(|e| e.version.as_str()).collect();
+    let woi: Vec<i32> = events.iter().map(|e| e.woi as i32).collect();
+    let wos: Vec<i32> = events.iter().map(|e| e.wos.unwrap_or(0) as i32).collect();
+    let yoi: Vec<i32> = events.iter().map(|e| e.yoi as i32).collect();
+    let yos: Vec<i32> = events.iter().map(|e| e.yos as i32).collect();
+    let received_at: Vec<chrono::DateTime<chrono::Utc>> = events
+        .iter()
+        .map(|e| e.received_at.unwrap_or_else(chrono::Utc::now))
+        .collect();
+
+    sqlx::query(
+        r#"
+        INSERT INTO telemetry_events (
             cadence, channel, country_code, metric_name, metric_value,
             platform, version, woi, wos, yoi, yos, received_at
-        ) VALUES (
-            $1, $2, $3, $4, $5,
-            $6, $7, $8, $9, $10, $11, $12
-        )",
-        event.cadence,
-        event.channel,
-        event.country_code,
-        event.metric_name,
-        event.metric_value,
-        event.platform,
-        event.version,
-        event.woi,
-        event.wos.unwrap_or(0),
-        event.yoi,
-        event.yos,
-        event.received_at.unwrap_or_else(chrono::Utc::now)
+        )
+        SELECT *
+        FROM UNNEST(
+            $1::text[],      -- cadence
+            $2::text[],      -- channel
+            $3::text[],      -- country_code
+            $4::text[],      -- metric_name
+            $5::float8[],    -- metric_value
+            $6::text[],      -- platform
+            $7::text[],      -- version
+            $8::int4[],      -- woi
+            $9::int4[],      -- wos
+            $10::int4[],     -- yoi
+            $11::int4[],     -- yos
+            $12::timestamptz[] -- received_at
+        )
+        "#
     )
-        .execute(pool)
-        .await?;
+    .bind(cadence)
+    .bind(channel)
+    .bind(country_code)
+    .bind(metric_name)
+    .bind(metric_value)
+    .bind(platform)
+    .bind(version)
+    .bind(woi)
+    .bind(wos)
+    .bind(yoi)
+    .bind(yos)
+    .bind(received_at)
+    .execute(pool)
+    .await?;
+
     Ok(())
 }

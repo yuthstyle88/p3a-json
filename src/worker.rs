@@ -1,11 +1,11 @@
-use std::collections::HashMap;
 use actix::prelude::*;
-use lapin::{options::BasicConsumeOptions, types::FieldTable, Channel};
+use lapin::Channel;
 use futures_util::stream::StreamExt;
 use std::sync::Arc;
+use lapin::message::Delivery;
 use lapin::options::BasicAckOptions;
 
-use crate::telemetry_event::{insert_event, models::TelemetryEvent};
+use crate::telemetry_event::{insert_events, models::TelemetryEvent};
 
 
 #[derive(Clone)]
@@ -18,60 +18,47 @@ pub struct AppContext {
 pub struct RabbitMqWorker {
     pub channel: Arc<Channel>,
     pub pool: sqlx::PgPool,
+    pub buffer: Vec<Delivery>,
+}
+
+struct DeliveryMessage(pub Delivery);
+
+impl actix::Message for DeliveryMessage {
+    type Result = ();
+}
+
+impl Handler<DeliveryMessage> for RabbitMqWorker {
+    type Result = ();
+
+    fn handle(&mut self, msg: DeliveryMessage, _ctx: &mut Self::Context) -> Self::Result {
+        self.buffer.push(msg.0);
+
+        if self.buffer.len() >= 100 {
+            let deliveries = std::mem::take(&mut self.buffer);
+            let pool = self.pool.clone();
+
+            // สมมติคุณมี pub async fn insert_events(pool: &PgPool, events: &[TelemetryEvent]) -> Result<(), Error>
+            actix::spawn(async move {
+                let mut events = Vec::with_capacity(deliveries.len());
+                for delivery in &deliveries {
+                    if let Ok(data) = serde_json::from_slice::<TelemetryEvent>(&delivery.data) {
+                        events.push(data);
+                    }
+                    // ถ้า deserialize ไม่ได้ก็สามารถ ack หรือ log ตามต้องการ
+                }
+                if let Err(e) = insert_events(&pool, &events).await {
+                    eprintln!("Failed to insert events: {:?}", e);
+                }
+                // ack ทุกอันหลังจาก insert (ถ้าจำเป็น)
+                for delivery in deliveries {
+                    delivery.ack(BasicAckOptions::default()).await.expect("Ack failed");
+                }
+            });
+        }
+    }
 }
 
 impl Actor for RabbitMqWorker {
     type Context = Context<Self>;
-
-    fn started(&mut self, _ctx: &mut Self::Context) {
-        println!("RabbitMqWorker actor started");
-        let channel = self.channel.clone();
-        let pool = self.pool.clone();
-
-        actix_rt::spawn(async move {
-            let mut consumer = channel
-                .basic_consume(
-                    "my_queue",
-                    "my_consumer",
-                    BasicConsumeOptions::default(),
-                    FieldTable::default(),
-                )
-                .await
-                .expect("Failed to start consumer");
-
-            while let Some(delivery) = consumer.next().await {
-                match delivery {
-                    Ok(delivery) => {
-                        // Deserialize เป็น TelemetryEvent
-                        let data: TelemetryEvent = match serde_json::from_slice(&delivery.data) {
-                            Ok(event) => event,
-                            Err(e) => {
-                                eprintln!("Failed to deserialize payload: {:?}", e);
-                                delivery
-                                    .ack(BasicAckOptions::default())
-                                    .await
-                                    .expect("Ack failed");
-                                continue;
-                            }
-                        };
-                        // ดึง pool จาก app_context
-                        let pool = pool.clone();
-
-                        if let Err(e) = insert_event(&pool, &data).await {
-                            eprintln!("Failed to insert event: {:?}", e);
-                        }
-
-                        delivery
-                            .ack(BasicAckOptions::default())
-                            .await
-                            .expect("Ack failed");
-                    }
-                    Err(err) => {
-                        eprintln!("Actor error: {:?}", err);
-                    }
-                }
-            }
-            actix_rt::Arbiter::current().stop();
-        });
-    }
+    
 }

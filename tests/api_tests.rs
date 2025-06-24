@@ -111,6 +111,7 @@ async fn test_worker_processes_messages() {
     let worker = RabbitMqWorker {
         channel: ctx.rabbit_channel.clone(),
         pool: ctx.pool.clone(),
+        buffer: Default::default(),
     }
         .start();
 
@@ -172,6 +173,7 @@ async fn test_worker_handles_invalid_messages() {
     let worker = RabbitMqWorker {
         channel: ctx.rabbit_channel.clone(),
         pool: ctx.pool.clone(),
+        buffer: Default::default(),
     }
         .start();
 

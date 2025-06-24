@@ -57,6 +57,7 @@ async fn main() -> std::io::Result<()> {
     let _worker_addr = RabbitMqWorker {
         channel: arc_channel.clone(),
         pool: pool.clone(),
+        buffer: Default::default(),
     }
         .start();
     
