@@ -36,11 +36,15 @@ async fn main() -> std::io::Result<()> {
     let channel = conn.create_channel()
         .await
         .expect("Failed to create channel");
-
+    
+    let queue_declare = QueueDeclareOptions {
+        durable: true,
+        ..Default::default()
+    };
     channel
         .queue_declare(
             "my_queue",
-            QueueDeclareOptions::default(),
+            queue_declare,
             FieldTable::default(),
         )
         .await
