@@ -5,10 +5,7 @@ use lapin::{Connection, ConnectionProperties, options::QueueDeclareOptions, type
 use std::sync::Arc;
 use actix::Actor;
 use telemetry_events::worker::{AppContext, RabbitMqWorker};
-use aws_config::BehaviorVersion;
-use aws_types::region::Region;
 use telemetry_events::routers::service_scope;
-use telemetry_events::update2::{init_from_dynamodb, is_not_exits_create_table, scan_all_extensions, spawn_periodic_refresh};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -23,23 +20,6 @@ async fn main() -> std::io::Result<()> {
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL not set");
     let brave_service_key = std::env::var("BRAVE_SERVICE_KEY").expect("BRAVE_SERVICE_KEY not set");
     let rabbitmq_url = std::env::var("RABBITMQ_URL").expect("RABBITMQ_URL not set");
-
-    let endpoint = std::env::var("AWS_ENDPOINT").ok();
-    let region = std::env::var("AWS_REGION").unwrap_or_else(|_| "us-east-1".to_string());
-    let region = Region::new(region);
-    let sdk_config = aws_config::defaults(BehaviorVersion::latest())
-        .region(region)
-        .load()
-        .await;
-    
-    let db_config_builder = aws_sdk_dynamodb::config::Builder::from(&sdk_config);
-    let db_config = if let Some(endpoint_url) = endpoint {
-        db_config_builder.endpoint_url(endpoint_url).build()
-    } else {
-        db_config_builder.build()
-    };
-
-    let dynamodb_client = aws_sdk_dynamodb::Client::from_conf(db_config);
     
     // Setup PostgreSQL connection pool
     let pool = PgPoolOptions::new()
@@ -76,7 +56,6 @@ async fn main() -> std::io::Result<()> {
     }
         .start();
     
-    let _ = is_not_exits_create_table(&dynamodb_client).await;
     
    // let items = scan_all_extensions(&dynamodb_client).await.expect("Failed to scan all extensions");
     // Prepare AppContext and Actix Web server
@@ -84,8 +63,6 @@ async fn main() -> std::io::Result<()> {
         pool,
         brave_service_key,
         rabbit_channel: arc_channel,
-        dynamodb_client,
-        map: Default::default(),
     });
     
     // spawn_periodic_refresh(Arc::clone(&app_context));

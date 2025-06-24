@@ -2,10 +2,7 @@ pub mod telemetry_event;
 pub mod worker;
 pub mod payload;
 pub mod queue_job;
-pub mod update2;
 pub mod error;
-pub mod constellation;
-pub mod omaha;
 pub mod routers;
 
 // Export public items

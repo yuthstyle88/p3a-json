@@ -76,8 +76,7 @@ async fn setup_test_context() -> AppContext {
         pool,
         brave_service_key,
         rabbit_channel,
-        dynamodb_client,
-        map: Arc::new(Default::default()),
+
     }
 }
 
@@ -125,7 +124,7 @@ async fn test_worker_processes_messages() {
         platform: "ios".to_string(),
         version: "1.78".to_string(),
         woi: 22,
-        wos: 22,
+        wos: Some(22),
         yoi: 2025,
         yos: 2025,
     };

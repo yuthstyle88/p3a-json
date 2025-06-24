@@ -35,10 +35,10 @@ Content-Type: application/json
   "yos": 2024
 }
 
-### Test with wrong auth key
+### Test with missing wos field
 POST http://localhost:8080/api/v1/p3a
 Content-Type: application/json
-BraveServiceKey: wrong_key
+BraveServiceKey: qztbjzBqJueQZLFkwTTJrieu8Vw3789u
 
 {
   "cadence": "daily",
@@ -49,7 +49,6 @@ BraveServiceKey: wrong_key
   "platform": "macos",
   "version": "1.0.0",
   "woi": 1,
-  "wos": 2,
   "yoi": 2024,
   "yos": 2024
 }
@@ -83,23 +82,6 @@ BraveServiceKey: test_key
   "metric_value": 100
 }
 
-### Test invalid JSON
-GET http://localhost:8080/api/v1/p3a
-
-### Test instances router
-GET http://localhost:8011/api/v1/instances/express/info
-BraveServiceKey: qztbjzBqJueQZLFkwTTJrieu8Vw3789u
-
-### Test instances router
-POST http://localhost:8011/api/v1/collector/express/randomness
-Content-Type: application/json
-BraveServiceKey: qztbjzBqJueQZLFkwTTJrieu8Vw3789u
-
-{
-  "data": "invalid_test",
-  "epoch": 100
-}
-###
 
 
 ### Test  import json

@@ -6,9 +6,6 @@ use std::sync::Arc;
 use lapin::options::BasicAckOptions;
 
 use crate::telemetry_event::{insert_event, models::TelemetryEvent};
-use aws_sdk_dynamodb::Client as DynamoDbClient;
-use tokio::sync::RwLock;
-use crate::update2::model::Extension;
 
 
 #[derive(Clone)]
@@ -16,8 +13,6 @@ pub struct AppContext {
     pub pool: sqlx::PgPool,
     pub brave_service_key: String,
     pub rabbit_channel: Arc<Channel>,
-    pub dynamodb_client: DynamoDbClient,
-    pub map: Arc<RwLock<HashMap<String, Extension>>>,
 }
 
 pub struct RabbitMqWorker {

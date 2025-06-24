@@ -7,10 +7,11 @@ use crate::worker::AppContext;
 pub async fn queue_job(
     ctx: web::Data<AppContext>,
     item: web::Json<MyPayload>,
+    path: web::Path<String>,
 ) -> impl Responder {
     let worker = ctx.rabbit_channel.clone();
     let payload = item.into_inner();
-
+    let path = path.into_inner();
     // Serialize payload เป็น JSON
     let payload_bytes = match serde_json::to_vec(&payload) {
         Ok(val) => val,

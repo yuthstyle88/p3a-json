@@ -13,7 +13,7 @@ pub mod models {
         pub platform: String,
         pub version: String,
         pub woi: i16,
-        pub wos: i16,
+        pub wos: Option<i16>,
         pub yoi: i16,
         pub yos: i16,
         pub received_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -40,7 +40,7 @@ pub async fn insert_event(
         event.platform,
         event.version,
         event.woi,
-        event.wos,
+        event.wos.unwrap_or(0),
         event.yoi,
         event.yos,
         event.received_at.unwrap_or_else(chrono::Utc::now)
