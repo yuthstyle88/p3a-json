@@ -1,3 +1,7 @@
+use std::sync::Arc;
+use crate::models::DBPool;
+use crate::payload::MyPayload;
+
 pub mod models {
     use serde::{Deserialize, Serialize};
     use chrono;
@@ -19,10 +23,9 @@ pub mod models {
         pub received_at: Option<chrono::DateTime<chrono::Utc>>,
     }
 }
-
 pub async fn insert_events(
-    pool: &sqlx::PgPool,
-    events: &[models::TelemetryEvent],
+    pool: Arc<DBPool>,
+    events: Vec<MyPayload>,
 ) -> Result<(), sqlx::Error> {
     if events.is_empty() {
         return Ok(());
@@ -40,16 +43,12 @@ pub async fn insert_events(
     let wos: Vec<i32> = events.iter().map(|e| e.wos.unwrap_or(0) as i32).collect();
     let yoi: Vec<i32> = events.iter().map(|e| e.yoi as i32).collect();
     let yos: Vec<i32> = events.iter().map(|e| e.yos as i32).collect();
-    let received_at: Vec<chrono::DateTime<chrono::Utc>> = events
-        .iter()
-        .map(|e| e.received_at.unwrap_or_else(chrono::Utc::now))
-        .collect();
 
     sqlx::query(
         r#"
         INSERT INTO telemetry_events (
             cadence, channel, country_code, metric_name, metric_value,
-            platform, version, woi, wos, yoi, yos, received_at
+            platform, version, woi, wos, yoi, yos
         )
         SELECT *
         FROM UNNEST(
@@ -63,25 +62,23 @@ pub async fn insert_events(
             $8::int4[],      -- woi
             $9::int4[],      -- wos
             $10::int4[],     -- yoi
-            $11::int4[],     -- yos
-            $12::timestamptz[] -- received_at
+            $11::int4[]     -- yos
         )
         "#
     )
-    .bind(cadence)
-    .bind(channel)
-    .bind(country_code)
-    .bind(metric_name)
-    .bind(metric_value)
-    .bind(platform)
-    .bind(version)
-    .bind(woi)
-    .bind(wos)
-    .bind(yoi)
-    .bind(yos)
-    .bind(received_at)
-    .execute(pool)
-    .await?;
+        .bind(cadence)
+        .bind(channel)
+        .bind(country_code)
+        .bind(metric_name)
+        .bind(metric_value)
+        .bind(platform)
+        .bind(version)
+        .bind(woi)
+        .bind(wos)
+        .bind(yoi)
+        .bind(yos)
+        .execute(&pool.inner_pool)
+        .await?;
 
     Ok(())
 }

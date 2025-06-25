@@ -1,24 +1,5 @@
-### Test successful telemetry event insert
-POST http://localhost:8080/api/v1/p3a
-Content-Type: application/json
-BraveServiceKey: qztbjzBqJueQZLFkwTTJrieu8Vw3789u
-
-{
-  "cadence": "daily",
-  "channel": "stable",
-  "country_code": "US",
-  "metric_name": "test_metric",
-  "metric_value": 100,
-  "platform": "macos",
-  "version": "1.0.0",
-  "woi": 1,
-  "wos": 2,
-  "yoi": 2024,
-  "yos": 2024
-}
-
 ### Test unauthorized access
-POST http://localhost:8080/api/v1/p3a
+POST http://localhost:8011/api/v1/p3a
 Content-Type: application/json
 
 {
