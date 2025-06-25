@@ -43,6 +43,7 @@ pub async fn insert_events(
     let wos: Vec<i32> = events.iter().map(|e| e.wos.unwrap_or(0) as i32).collect();
     let yoi: Vec<i32> = events.iter().map(|e| e.yoi as i32).collect();
     let yos: Vec<i32> = events.iter().map(|e| e.yos as i32).collect();
+    let mut transaction = pool.inner_pool.begin().await?;
 
     sqlx::query(
         r#"
@@ -77,8 +78,9 @@ pub async fn insert_events(
         .bind(wos)
         .bind(yoi)
         .bind(yos)
-        .execute(&pool.inner_pool)
+        .execute(&mut *transaction)
         .await?;
 
+    transaction.commit().await?;
     Ok(())
 }

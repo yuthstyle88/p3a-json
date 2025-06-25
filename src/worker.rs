@@ -24,9 +24,9 @@ impl Handler<DeliveryMessage> for ActorWorker {
 
         if self.buffer.len() >= 100 {
             let pool = self.pool.clone();
-            let buffer = self.buffer.clone();   
+            let buffer = self.buffer.clone();
             actix::spawn(async move {
-                if let Err(e) = insert_events(pool,  buffer).await {
+                if let Err(e) = insert_events(pool.clone(), buffer).await {
                     eprintln!("Failed to insert events: {:?}", e);
                 }
             });
