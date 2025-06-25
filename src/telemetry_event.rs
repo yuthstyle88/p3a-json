@@ -2,27 +2,6 @@ use std::sync::Arc;
 use crate::models::DBPool;
 use crate::payload::MyPayload;
 
-pub mod models {
-    use serde::{Deserialize, Serialize};
-    use chrono;
-
-    #[derive(Debug, Clone, Deserialize, Serialize)]
-    pub struct TelemetryEvent {
-        pub id: Option<i64>,
-        pub cadence: String,
-        pub channel: String,
-        pub country_code: String,
-        pub metric_name: String,
-        pub metric_value: i32,
-        pub platform: String,
-        pub version: String,
-        pub woi: i16,
-        pub wos: Option<i16>,
-        pub yoi: i16,
-        pub yos: i16,
-        pub received_at: Option<chrono::DateTime<chrono::Utc>>,
-    }
-}
 pub async fn insert_events(
     pool: Arc<DBPool>,
     events: Vec<MyPayload>,
