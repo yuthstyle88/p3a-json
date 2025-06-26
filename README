@@ -61,8 +61,7 @@ createdb telemetry_db
 สร้างไฟล์ `.env` ที่ root โปรเจค เช่น
 
 ```env
-DATABASE_URL=postgres://yongyutjantaboot@localhost:5432/telemetry_db
-BRAVE_SERVICE_KEY=qztbjzBqJueQZLFkwTTJrieu8Vw3789u
+DATABASE_URL=postgres://postgresusername@localhost:5432/telemetry_db
 ```
 
 ---
